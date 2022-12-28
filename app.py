@@ -16,7 +16,7 @@ from lib import sites
 from smtplib import SMTP_SSL as SMTP
 from email.mime.text import MIMEText
 
-with open('config.yml', 'r') as file:
+with open('config/config.yml', 'r') as file:
     configyml = yaml.safe_load(file)
 
 logging.basicConfig(filename="/logs/app.log",level=configyml["level"])
