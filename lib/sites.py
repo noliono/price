@@ -6,7 +6,7 @@ import logging
 import random
 import re
 
-with open('config.yml', 'r') as file:
+with open('config/config.yml', 'r') as file:
     configyml = yaml.safe_load(file)
 
 logging.basicConfig(filename="/logs/app.log",level=configyml["level"])
@@ -55,7 +55,7 @@ class sites():
         self.headers = random.choice(headers_list)
         self.name_site = name_site
         self.URL = URL
-        with open('site.yml', 'r') as file:
+        with open('config/site.yml', 'r') as file:
             self.siteyml = yaml.safe_load(file)
         response = requests.get(URL, headers=self.headers)
         self.soup = bs4.BeautifulSoup(response.text, "html.parser")
