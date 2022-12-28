@@ -7,26 +7,12 @@ bikester.fr:
   variations: "span,class,variations"
   number_articles: "span,class,cyc-typo_subheader"
 decathlon.fr:
-  #name_tree: "div,class,svelte-147451p"
-  #name_tree: "main,class,svelte-iu2jlu"
   name_tree: "script,id,__dkt"
-  #price: "dic,class,price-content"
-  #price: "span,class,vtmn-price" #vtmn-price vtmn-price_size--medium vtmn-price_variant--accent
-  #price: "div,class,prc__active-price"
-  #price_sale: ""
-  #name: "span,class,vh"
-  #name: "h1,class,svelte-hvr197"
-  #marque: "strong,class,vtmn-text-sm" #strong class="vtmn-text-sm
-  #marque: "strong,class,svelte-bcstxf"
-  #marque: ""
-  #variations: "div,class,svelte-vnsge2"
-  #number_articles: ""
 probikeshop.fr:
   name_tree: "div,class,product row"
   price: "span,class,product_price" #span class="product_price"
   price_sale: ""
   name: "span,class,product_title"
-  marque: "" 
-  #"span,itemprop,name"
+  marque: "" #"span,itemprop,name"
   variations: "span,class,productInfoComplementary_stock"
   number_articles: ""
