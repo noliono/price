@@ -11,20 +11,31 @@ import re
 import random
 import json
 import logging
+from lib import sites
 
 from smtplib import SMTP_SSL as SMTP
 from email.mime.text import MIMEText
 
-logging.basicConfig(filename="app.log",level="DEBUG")
+with open('config.yml', 'r') as file:
+    configyml = yaml.safe_load(file)
+
+logging.basicConfig(filename="/logs/app.log",level=configyml["level"])
+#logging.basicConfig(filename="/logs/app.log",level="DEBUG")
 logging.getLogger("urllib3").setLevel(logging.ERROR)
- #.connectionpool:http://10.0.0.127:9200 "POST /prix-test/_search HTTP/1.1" 200 370723
 logging.getLogger("elastic_transport").setLevel(logging.ERROR)
 
 logging.info("################ Script start #################################")
 
-scriptpath = ""
-ELASTIC_SERVER = "http://10.0.0.127:9200"
-es = Elasticsearch(ELASTIC_SERVER)
+logging.info("Load site info")
+
+with open('site.yml', 'r') as file:
+    siteyml = yaml.safe_load(file)
+
+ELASTIC_NODES = configyml["elastic"]["nodes"]
+if not configyml["elastic"]["apiid"]:
+    es = Elasticsearch(ELASTIC_NODES)
+
+elasticindex = configyml["elastic"]["index"]
 
 headers_list = [{
 	'authority': 'httpbin.org', 
@@ -85,163 +96,135 @@ def remove_blank_list(x):
         pass
     return y
 
-logging.info("Load site info")
+for name_search,URL in configyml["tosurvey"].items():
+    name_site = urlparse(URL).netloc.replace("www.","")
+    logging.info("name site = " + name_site + " / name_search=" + name_search + " / URL=" + URL)
+    response = requests.get(URL, headers=headers)
+    soup = bs4.BeautifulSoup(response.text, "html.parser")
+    
+    name_tree_tag = siteyml[name_site]["name_tree"].split(',')
+    
+    matox = dict()
 
-with open('site.yml', 'r') as file:
-    siteyml = yaml.safe_load(file)
+    if name_site == "decathlon.fr":
+        products = soup.find_all(name_tree_tag[0], attrs={name_tree_tag[1]:name_tree_tag[2]})
+        matox = sites.decathlon().baseonjavascript(products,name_site,name_search)
+        #logging.debug(matox)
+        #exit()
+        continue
 
+    price_tag = siteyml[name_site]["price"].split(',')
+    price_sale_tag = siteyml[name_site]["price_sale"].split(',')
+    name_tag = siteyml[name_site]["name"].split(',')
+    marque_tag = siteyml[name_site]["marque"].split(',')
+    variations_tag = siteyml[name_site]["variations"].split(',')
+    if siteyml[name_site]["number_articles"]:
+        number_articles = siteyml[name_site]["number_articles"].split(',')
+        number_articles = int(trim_the_ends(soup.find(number_articles[0], attrs={number_articles[1]:number_articles[2]}).contents[0].replace("Articles","")))
+    else:
+        number_articles = 1
 
-with open(scriptpath+"entre", "r") as f :
-    for line in f.readlines():
-        entre = trim_the_ends(line).split(' ')
-        URL=entre[0]
-        name_search=entre[1]
-        name_site = urlparse(URL).netloc.replace("www.","")
-        logging.debug("name site = " + name_site)
-        logging.info("URL=" + URL)
-        response = requests.get(URL, headers=headers)
-        soup = bs4.BeautifulSoup(response.text, "html.parser")
-        
-        name_tree_tag = siteyml[name_site]["name_tree"].split(',')
-        price_tag = siteyml[name_site]["price"].split(',')
-        price_sale_tag = siteyml[name_site]["price_sale"].split(',')
-        name_tag = siteyml[name_site]["name"].split(',')
-        marque_tag = siteyml[name_site]["marque"].split(',')
-        variations_tag = siteyml[name_site]["variations"].split(',')
-        if siteyml[name_site]["number_articles"]:
-            number_articles = siteyml[name_site]["number_articles"].split(',')
-            number_articles = int(trim_the_ends(soup.find(number_articles[0], attrs={number_articles[1]:number_articles[2]}).contents[0].replace("Articles","")))
-        else:
-            number_articles = 1
+    i = 1
+    while len(matox) < number_articles:
+        if "page" in URL and i > 1:
+            URL = re.sub("page=[0-9]*", "page=" + str(i), URL)
+            logging.info("URL=" + str(URL))
+            response = requests.get(URL, headers=headers)
+            soup = bs4.BeautifulSoup(response.text, "html.parser")
 
-        matox = dict()
+        products = soup.find_all(name_tree_tag[0], attrs={name_tree_tag[1]:name_tree_tag[2]})
 
-        i = 1
-        while len(matox) < number_articles:
-            if "page" in URL and i > 1:
-                URL = re.sub("page=[0-9]*", "page=" + str(i), URL)
-                logging.info("URL=" + str(URL))
-                response = requests.get(URL, headers=headers)
-                soup = bs4.BeautifulSoup(response.text, "html.parser")
+        if not products:
+            print("Error: No products found !")
+            print(response.text)
+            continue #exit()
 
-            products = soup.find_all(name_tree_tag[0], attrs={name_tree_tag[1]:name_tree_tag[2]})
+        TypesInName = ['Vélo de Randonnée']
 
-            if not products:
-                print("Error: No products found !")
-                print(response.text)
-                continue #exit()
-
-            if name_site == "decathlon.fr":
-                jsonresult = json.loads(products[0].contents[0])
-                for key in jsonresult["_ctx"]["data"]:
-                    if "Super" in key["id"]:
-                        for kk in key["data"]["blocks"]["items"]:
-                            marque = kk["brand"]["label"]
-                            supermodelId = kk["supermodelId"]
-                            for kkk in kk["models"]:
-                                name = kkk["webLabel"]
-                                prix = kkk["price"]
-                                variations = kkk["availableSizes"]
-                                url = "https://" + name_site + "/" + kkk["url"]
-                                matox[marque + " " + name + "-" + supermodelId] = {"marque":marque.lower(), "name":name.lower(), "prix":prix, "variations":variations, "name_search":name_search, "name_site":name_site, "fullname":marque.lower() + " " + name.lower(), "modelId":supermodelId, "url":url}
-                continue
-
-            TypesBikeInName = ['Vélo de Randonnée']
-
-            for product in products:
-                logging.debug("product = " + str(product))
-                if len(marque_tag) > 1:
-                    marque = trim_the_ends( product.find(marque_tag[0], attrs={marque_tag[1]:marque_tag[2]}) )
-                    if name_site == "probikeshop.fr" and marque:
-                        for marquee in marque:
-                            marque = marquee
-                    elif name_site == "bikester.fr" or name_site == "decathlon.fr" and marque:
-                        marque = trim_the_ends( product.find(marque_tag[0], attrs={marque_tag[1]:marque_tag[2]}).contents[0] )
-                    else:
-                        continue #to avoid empty decathlon item return
-                else:
-                    marque = "Inconnu" #Cas probikeshop
-                name = trim_the_ends( product.find(name_tag[0], attrs={name_tag[1]:name_tag[2]}).contents[0] )
-                for TypeBikeInName in TypesBikeInName:
-                    name = name.replace(TypeBikeInName + " ","")
-                if marque == "Inconnu": #Try to get from name
-                    marque = name.split(" ")[0]
-                    if marque == "VSF":
-                        marque = "VSF FAHRRADMANUFAKTUR"
-                    name = name.replace(marque + " ","")
-                prix = product.find(price_tag[0], attrs={price_tag[1]:price_tag[2]})
-                if len(prix) == 1:
-                    prix = trim_the_ends( prix.contents[0] ).encode('ascii','ignore').decode()
-                else:
-                    prix = trim_the_ends( prix.contents[2] ).encode('ascii','ignore').decode()
-                if prix == "PVC" or prix == "" or prix == "*" and price_sale_tag != "":
-                    prix = trim_the_ends( product.find(price_sale_tag[0], attrs={price_sale_tag[1]:price_sale_tag[2]}).contents[0] )
-                if prix and type(prix) == str:
-                    prix = prix.replace(" €", "")
-                    prix = prix.replace("€", "")
-                    prix = prix.replace(".","")
-                    prix = prix.replace(",",".")
-                if prix == "N/A":
-                    prix = ""
-                variations = product.find(variations_tag[0], attrs={variations_tag[1]:variations_tag[2]})
-                if name_site == "bikester.fr":
-                    if variations:
-                        if variations.find("span"):
-                            variations = product.find(variations_tag[0], attrs={variations_tag[1]:variations_tag[2]}).find_all("span")
-                            variationlist = list()
-                            for variation in variations:
-                                variationlist.append(variation.contents[0])
-                            variations = variationlist
-                        else:
-                            variations = ""
+        for product in products:
+            logging.debug("product = " + str(product))
+            if len(marque_tag) > 1:
+                marque = trim_the_ends( product.find(marque_tag[0], attrs={marque_tag[1]:marque_tag[2]}) )
+                if name_site == "probikeshop.fr" and marque:
+                    for marquee in marque:
+                        marque = marquee
+                elif name_site == "bikester.fr" and marque:
+                    marque = trim_the_ends( product.find(marque_tag[0], attrs={marque_tag[1]:marque_tag[2]}).contents[0] )
+            else:
+                marque = "Inconnu" #Cas probikeshop
+            name = trim_the_ends( product.find(name_tag[0], attrs={name_tag[1]:name_tag[2]}).contents[0] )
+            for TypeInName in TypesInName:
+                name = name.replace(TypeInName + " ","")
+            if marque == "Inconnu": #Try to get from name
+                marque = name.split(" ")[0]
+                if marque == "VSF":
+                    marque = "VSF FAHRRADMANUFAKTUR"
+                name = name.replace(marque + " ","")
+            prix = product.find(price_tag[0], attrs={price_tag[1]:price_tag[2]})
+            if len(prix) == 1:
+                prix = trim_the_ends( prix.contents[0] ).encode('ascii','ignore').decode()
+            else:
+                prix = trim_the_ends( prix.contents[2] ).encode('ascii','ignore').decode()
+            if prix == "PVC" or prix == "" or prix == "*" and price_sale_tag != "":
+                prix = trim_the_ends( product.find(price_sale_tag[0], attrs={price_sale_tag[1]:price_sale_tag[2]}).contents[0] )
+            if prix and type(prix) == str:
+                prix = prix.replace(" €", "")
+                prix = prix.replace("€", "")
+                prix = prix.replace(".","")
+                prix = prix.replace(",",".")
+            if prix == "N/A":
+                prix = ""
+            variations = product.find(variations_tag[0], attrs={variations_tag[1]:variations_tag[2]})
+            if name_site == "bikester.fr":
+                if variations:
+                    if variations.find("span"):
+                        variations = product.find(variations_tag[0], attrs={variations_tag[1]:variations_tag[2]}).find_all("span")
+                        variationlist = list()
+                        for variation in variations:
+                            variationlist.append(variation.contents[0])
+                        variations = variationlist
                     else:
                         variations = ""
-                if name_site == "decathlon.fr":
-                    #variations = variations #ToDo: Use javascript to add the new product
-                    variations = ""
-                if name_site == "probikeshop.fr":
-                    if variations:
-                        variations = remove_blank_list( trim_the_ends(variations.contents[0]).split(",") )
-                #if variations != "":
-                #    matox[marque + " " + name] = {"marque":marque, "name":name, "prix":prix, "variations":variations, "name_search":name_search, "name_site":name_site, "fullname":marque + " " + name}
-                if marque + " " + name in matox:
-                    id = str(random.randrange(0, 50000, 5))
-                    matox[marque + " " + name + " " + id] = {"marque":marque, "name":name, "prix":prix, "variations":variations, "name_search":name_search, "name_site":name_site, "fullname":marque + " " + name}
-                    #print(matox[marque + " " + name + " " + id])
                 else:
-                    matox[marque + " " + name] = {"marque":marque.lower(), "name":name.lower(), "prix":prix, "variations":variations, "name_search":name_search, "name_site":name_site, "fullname":marque.lower() + " " + name.lower()}
-                    #print(matox[marque + " " + name])
-                ## Récupération de l'ID produit qui change pour le cas de même nom de pduit : exemple : Ortler Bozen Trapèze, rouge : Année 2021 et 2022
-                #  1319869 dans le code : 
-                # <div id="5899e52714c17e73464b7fd54b" data-productid="G1319869" data-masterid="M920128" class="js-product-tile-lazyload gtm-producttile product-tile product-tile--sale uv-item   " data-uv-item={&quot;id&quot;:&quot;1319869&quot;,&quot;unit_sale_price&quot;:2239} data-gtm-productdata="{&quot;name&quot;:&quot;Ortler Bozen Trapèze, rouge&quot;,&quot;id&quot;:&quot;1319869&quot;,&quot;brand&quot;:&quot;Ortler&quot;,&quot;price&quot;:1865.83,&quot;dimension42&quot;:&quot;Available&quot;,&quot;dimension51&quot;:4.8,&quot;dimension43&quot;:&quot;rouge&quot;,&quot;dimension62&quot;:&quot;10.4&quot;,&quot;dimension49&quot;:&quot;2499&quot;,&quot;dimension50&quot;:&quot;true&quot;,&quot;metric2&quot;:260,&quot;metric4&quot;:2499,&quot;metric7&quot;:1,&quot;metric8&quot;:0,&quot;variant&quot;:&quot;45cm (28\&quot;)&quot;,&quot;dimension53&quot;:&quot;45cm (28\&quot;)&quot;}">
-                #
-            i = i + 1
-        logging.debug(matox)
+                    variations = ""
+            if name_site == "probikeshop.fr":
+                if variations:
+                    variations = remove_blank_list( trim_the_ends(variations.contents[0]).split(",") )
+            #if variations != "":
+            #    matox[marque + " " + name] = {"marque":marque, "name":name, "prix":prix, "variations":variations, "name_search":name_search, "name_site":name_site, "fullname":marque + " " + name}
+            if marque + " " + name in matox:
+                id = str(random.randrange(0, 50000, 5))
+                matox[marque + " " + name + " " + id] = {"marque":marque, "name":name, "prix":prix, "variations":variations, "name_search":name_search, "name_site":name_site, "fullname":marque + " " + name}
+                #print(matox[marque + " " + name + " " + id])
+            else:
+                matox[marque + " " + name] = {"marque":marque.lower(), "name":name.lower(), "prix":prix, "variations":variations, "name_search":name_search, "name_site":name_site, "fullname":marque.lower() + " " + name.lower()}
+                #print(matox[marque + " " + name])
+            ## Récupération de l'ID produit qui change pour le cas de même nom de pduit : exemple : Ortler Bozen Trapèze, rouge : Année 2021 et 2022
+            #  1319869 dans le code : 
+            # <div id="5899e52714c17e73464b7fd54b" data-productid="G1319869" data-masterid="M920128" class="js-product-tile-lazyload gtm-producttile product-tile product-tile--sale uv-item   " data-uv-item={&quot;id&quot;:&quot;1319869&quot;,&quot;unit_sale_price&quot;:2239} data-gtm-productdata="{&quot;name&quot;:&quot;Ortler Bozen Trapèze, rouge&quot;,&quot;id&quot;:&quot;1319869&quot;,&quot;brand&quot;:&quot;Ortler&quot;,&quot;price&quot;:1865.83,&quot;dimension42&quot;:&quot;Available&quot;,&quot;dimension51&quot;:4.8,&quot;dimension43&quot;:&quot;rouge&quot;,&quot;dimension62&quot;:&quot;10.4&quot;,&quot;dimension49&quot;:&quot;2499&quot;,&quot;dimension50&quot;:&quot;true&quot;,&quot;metric2&quot;:260,&quot;metric4&quot;:2499,&quot;metric7&quot;:1,&quot;metric8&quot;:0,&quot;variant&quot;:&quot;45cm (28\&quot;)&quot;,&quot;dimension53&quot;:&quot;45cm (28\&quot;)&quot;}">
+            #
+        i = i + 1
+    logging.debug(matox)
 
-        for key,mato in matox.items():
-            mato["@timestamp"] = datetime.utcnow()
-            resp = es.index(index="prix-test", document=mato)
+    for key,mato in matox.items():
+        mato["@timestamp"] = datetime.utcnow()
+        resp = es.index(index=elasticindex, document=mato)
 
 ################################### Change détection and send mail
 
 time.sleep(5) #To avoid no index of actual data indexes
 
-mail=[]
-with open(scriptpath+"mail", "r") as f :
-    for line in f.readlines():
-        mail.append(line.strip(' \t\n\r'))
-
-SMTPserver = mail[0]
-sender = "'" + mail[1] + "'"
-destination = mail[2]
-USERNAME = mail[3]
-PASSWORD = mail[4]
+SMTPserver = configyml["mail"]["smtp"]
+sender = "'" + configyml["mail"]["sender"] + "'"
+destination = configyml["mail"]["recipient"]
+USERNAME = configyml["mail"]["login"]
+PASSWORD = configyml["mail"]["password"]
 text_subtype = 'plain'
 subject="Evolution prix"
 content=""
 
 ## Requête elastic pour récupérer une liste de matériel
-resp = es.search(index="prix-test", sort={ "@timestamp": { "order": "desc"} },size=1000)
+resp = es.search(index=elasticindex, sort={ "@timestamp": { "order": "desc"} },size=1000)
 matoxlist = list()
 for mato in resp["hits"]["hits"]:
     matoxdict = dict()
@@ -252,17 +235,19 @@ for mato in resp["hits"]["hits"]:
         matoxdict["modelId"] = mato["_source"]["modelId"]
     #else:
     #    matoxdict["modelId"] = ""
+    if "url" in mato["_source"]:
+        matoxdict["url"] = mato["_source"]["url"]
     matoxlist.append(matoxdict)
 
 #matoxlist_set = set(matoxlist)
 #matoxlist = (list(matoxlist_set))
 for mato in matoxlist:        
     ## Requête elastic par matériel
-    #resp = es.search(index="prix-test", query={ "bool": { "should": { "term": { "fullname": mato } }}},sort={ "@timestamp": { "order": "desc"} },size=2)
+    #resp = es.search(index=elasticindex, query={ "bool": { "should": { "term": { "fullname": mato } }}},sort={ "@timestamp": { "order": "desc"} },size=2)
     if "modelId" in mato:
-        resp = es.search(index="prix-test", query={ "bool": { "must": [ { "term": { "fullname": mato["fullname"] }},{"term": { "name_site": mato["name_site"]}},{"term": { "modelId": mato["modelId"] }}] } },sort={ "@timestamp": { "order": "desc"} },size=2)
+        resp = es.search(index=elasticindex, query={ "bool": { "must": [ { "term": { "fullname": mato["fullname"] }},{"term": { "name_site": mato["name_site"]}},{"term": { "modelId": mato["modelId"] }}] } },sort={ "@timestamp": { "order": "desc"} },size=2)
     else:
-        resp = es.search(index="prix-test", query={ "bool": { "must": [ { "term": { "fullname": mato["fullname"] }},{"term": { "name_site": mato["name_site"]}}] } },sort={ "@timestamp": { "order": "desc"} },size=2)
+        resp = es.search(index=elasticindex, query={ "bool": { "must": [ { "term": { "fullname": mato["fullname"] }},{"term": { "name_site": mato["name_site"]}}] } },sort={ "@timestamp": { "order": "desc"} },size=2)
     #logging.debug(resp)
     if len(resp["hits"]["hits"]) <= 1:
         continue #break
