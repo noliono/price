@@ -42,6 +42,14 @@ def addtoelastic(matox):
         mato["@timestamp"] = datetime.utcnow()
         resp = es.index(index=elasticindex, document=mato)
 
+def PrintableMato(mato):
+    PrintableMato = " - name_site = " + str(mato["name_site"]) + " / fullname = " + str(mato["fullname"]) 
+    if "modelId" in mato:
+        PrintableMato += " / Id = " + str(mato["modelId"])
+    if "url" in mato:
+        PrintableMato += " / URL = " + mato["url"]
+    return PrintableMato
+
 for name_search,URL in configyml["tosurvey"].items():
 
     name_site = urlparse(URL).netloc.replace("www.","")
@@ -94,6 +102,10 @@ for mato in resp["hits"]["hits"]:
         matoxdict["url"] = mato["_source"]["url"]
     matoxlist.append(matoxdict)
 
+# Avoid duplicate
+matoxlist = [x for n, x in enumerate(matoxlist) if x not in matoxlist[:n]]
+#logging.debug(matoxlist)
+
 #matoxlist_set = set(matoxlist)
 #matoxlist = (list(matoxlist_set))
 for mato in matoxlist:        
@@ -110,9 +122,9 @@ for mato in matoxlist:
     NewPrice = resp["hits"]["hits"][0]["_source"]["prix"]
     ActualPrice = resp["hits"]["hits"][1]["_source"]["prix"]
     #fullname = resp["hits"]["hits"][0]["_source"]["fullname"]
-    logging.debug( "Mato : " + str(mato) + " / ActualPrice : " + str(ActualPrice) + " / NewPrice : " + str(NewPrice) )
+    logging.debug( "Mato : " + PrintableMato(mato) + " / ActualPrice : " + str(ActualPrice) + " / NewPrice : " + str(NewPrice) )
     if NewPrice != ActualPrice:
-        content = content + str(mato) + " : Price change : From " + str(ActualPrice) + " to " + str(NewPrice) + "\r\n"
+        content = content + PrintableMato(mato) + " : Price change : From " + str(ActualPrice) + " to " + str(NewPrice) + "\r\n"
 
 if len(content) != 0:
     try:
