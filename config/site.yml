@@ -24,3 +24,12 @@ alltricks.fr:
   marque: "strong,class,alltricks-Product-brandLabel"
   variations: "p,class,alltricks-ChildSelector-customOptionLabel" #"div,class,alltricks-ChildSelector-customOptions-group"
   number_articles: "" #"div,class,alltricks-ProductListingHeader__item--left"
+fr.aliexpress.com:
+  name_tree: "script,type,text/javascript"
+  #name_tree: "a,class,31q8B _2f4Ho"
+  #price: "div,class_3gurs _37W_B"
+  #price_sale: ""
+  #name: "h1,class,_3y9Q1"
+  #marque: ""
+  #variations: ""
+  #number_articles: ""

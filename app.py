@@ -56,6 +56,8 @@ for name_search,URL in configyml["tosurvey"].items():
         #addtoelastic(matox)
         #logging.debug(matox)
         #continue
+    elif name_site == "fr.aliexpress.com":
+        matox = sites.sites(URL,name_site).aliexpress(name_search)
     else:
         matox = sites.sites(URL,name_site).generic(name_search)
 
@@ -77,7 +79,7 @@ subject="Evolution prix"
 content=""
 
 ## Requête elastic pour récupérer une liste de matériel
-resp = es.search(index=elasticindex, sort={ "@timestamp": { "order": "desc"} },size=2500)
+resp = es.search(index=elasticindex, sort={ "@timestamp": { "order": "desc"} },size=1500)
 matoxlist = list()
 for mato in resp["hits"]["hits"]:
     matoxdict = dict()

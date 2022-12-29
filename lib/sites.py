@@ -58,8 +58,8 @@ class sites():
         self.URL = URL
         with open('config/site.yml', 'r') as file:
             self.siteyml = yaml.safe_load(file)
-        response = requests.get(URL, headers=self.headers)
-        self.soup = bs4.BeautifulSoup(response.text, "html.parser")
+        self.response = requests.get(URL, headers=self.headers)
+        self.soup = bs4.BeautifulSoup(self.response.text, "html.parser")
         self.name_tree_tag = self.siteyml[name_site]["name_tree"].split(',')
         self.products = self.soup.find_all(self.name_tree_tag[0], attrs={self.name_tree_tag[1]:self.name_tree_tag[2]})
 
@@ -102,6 +102,47 @@ class sites():
                         matox[marque + " " + name + "-" + supermodelId] = {"marque":marque.lower(), "name":name.lower(), "prix":prix, "variations":variations, "name_search":name_search, "name_site":self.name_site, "fullname":marque.lower() + " " + name.lower(), "modelId":supermodelId, "url":url}
         return matox
 
+
+    def aliexpress(self,name_search): #Page multiples à gérer
+        matox = dict()
+        #print(self.products[3])
+        #print(self.products[3].contents[0])
+        myjson = self.products[3].contents[0].split("window.runParams = ", 1)[1].split("window.runParams.csrfToken",1)[0]
+        #exit()
+        myjson = myjson.replace(";","")
+        myjson = myjson.replace("window.runParams =","")
+        myjson = myjson.replace(myjson[0],"",1)
+        myjson = myjson.replace(myjson[0],"",1)
+        #print(myjson)
+        jsonresult = json.loads( myjson )
+        #print( str( len(jsonresult["mods"]["itemList"]["content"]) ) ) # =60 => La première page seulement
+        #print( json.dumps(jsonresult["mods"]["itemList"]["content"], indent=2) )
+        for key in jsonresult["mods"]["itemList"]["content"]:
+            #print( json.dumps(key["prices"]["salePrice"]["formattedPrice"], indent=2) )
+            #exit()
+            if "title" in key:
+                name = key["title"]["displayTitle"]
+                #marque = "" # a trouver dans le nom
+                marque = name.split(" – ")[0].replace(" – ","") #"PIPO – "
+                if len(marque) > 15:
+                    marque = ""
+                if marque != "":
+                    name = name.replace(marque + " – ","")
+                else:
+                    marque = name.split(" ")[0].replace(" ","")
+                    name = name.replace(marque + " ","")
+                #print(name)
+                supermodelId = key["productId"]
+                if not "prices" in key:
+                    continue
+                prix = key["prices"]["salePrice"]["formattedPrice"]
+                prix = prix.replace("€ ","")
+                prix = prix.replace(",",".")
+                variations = [] #version CPU / RAM / disque ... à trouver mais à des pruix différents !! => Comment le gérer !!
+                url = "https://" + self.name_site + "/item/" + supermodelId + ".html"
+                matox[marque + " " + name + "-" + supermodelId] = {"marque":marque.lower(), "name":name.lower(), "prix":prix, "variations":variations, "name_search":name_search, "name_site":self.name_site, "fullname":marque.lower() + " " + name.lower(), "modelId":supermodelId, "url":url}
+        return matox
+
     def generic(self,name_search):
         matox = dict()
         # Get html tag from config
@@ -121,13 +162,13 @@ class sites():
             if "page" in self.URL and i > 1:
                 self.URL = re.sub("page=[0-9]*", "page=" + str(i), self.URL)
                 logging.info("URL=" + str(self.URL))
-                response = requests.get(self.URL, headers=self.headers)
-                self.soup = bs4.BeautifulSoup(response.text, "html.parser")
+                self.response = requests.get(self.URL, headers=self.headers)
+                self.soup = bs4.BeautifulSoup(self.response.text, "html.parser")
                 self.products = self.soup.find_all(self.name_tree_tag[0], attrs={self.name_tree_tag[1]:self.name_tree_tag[2]})
 
             if not self.products:
                 logging.error("Error: No products found !")
-                logging.debug(response.text)
+                logging.debug(self.response.text)
                 continue #exit()
 
             TypesInName = ['Vélo de Randonnée', 'Velo de Voyage / Velotaf','Vélo de Voyage','Vélo de Route Électrique']
