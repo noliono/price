@@ -5,6 +5,7 @@ import yaml
 import logging
 import random
 import re
+#import unidecode
 
 with open('config/config.yml', 'r') as file:
     configyml = yaml.safe_load(file)
@@ -129,32 +130,41 @@ class sites():
                 logging.debug(response.text)
                 continue #exit()
 
-            TypesInName = ['Vélo de Randonnée']
+            TypesInName = ['Vélo de Randonnée', 'Velo de Voyage / Velotaf','Vélo de Voyage','Vélo de Route Électrique']
 
             for product in self.products:
                 logging.debug("product = " + str(product))
                 if len(marque_tag) > 1:
                     marque = self.trim_the_ends( product.find(marque_tag[0], attrs={marque_tag[1]:marque_tag[2]}) )
-                    if self.name_site == "probikeshop.fr" and marque:
+                    if self.name_site == "probikeshop.fr" or self.name_site == "alltricks.fr" and marque:
                         for marquee in marque:
-                            marque = marquee
+                            marque = self.trim_the_ends(marquee)
                     elif self.name_site == "bikester.fr" and marque:
                         marque = self.trim_the_ends( product.find(marque_tag[0], attrs={marque_tag[1]:marque_tag[2]}).contents[0] )
                 else:
                     marque = "Inconnu" #Cas probikeshop
+                if product.find(name_tag[0], attrs={name_tag[1]:name_tag[2]}) is None:
+                    return matox
                 name = self.trim_the_ends( product.find(name_tag[0], attrs={name_tag[1]:name_tag[2]}).contents[0] )
                 for TypeInName in TypesInName:
                     name = name.replace(TypeInName + " ","")
+                    #name = unidecode.unidecode(name).replace(unidecode.unidecode(TypeInName + " ","")
                 if marque == "Inconnu": #Try to get from name
                     marque = name.split(" ")[0]
                     if marque == "VSF":
                         marque = "VSF FAHRRADMANUFAKTUR"
-                    name = name.replace(marque + " ","")
+                name = name.replace(marque + " ","")
                 prix = product.find(price_tag[0], attrs={price_tag[1]:price_tag[2]})
+                if self.name_site == "alltricks.fr":
+                    prix = self.trim_the_ends( prix.contents[len(prix)-1].contents[0]).encode('ascii','ignore').decode()
+                else:
+                    prix = self.trim_the_ends( prix.contents[len(prix)-1] ).encode('ascii','ignore').decode()
+                '''
                 if len(prix) == 1:
                     prix = self.trim_the_ends( prix.contents[0] ).encode('ascii','ignore').decode()
                 else:
                     prix = self.trim_the_ends( prix.contents[2] ).encode('ascii','ignore').decode()
+                '''
                 if prix == "PVC" or prix == "" or prix == "*" and price_sale_tag != "":
                     prix = self.trim_the_ends( product.find(price_sale_tag[0], attrs={price_sale_tag[1]:price_sale_tag[2]}).contents[0] )
                 if prix and type(prix) == str:
@@ -164,8 +174,8 @@ class sites():
                     prix = prix.replace(",",".")
                 if prix == "N/A":
                     prix = ""
-                variations = product.find(variations_tag[0], attrs={variations_tag[1]:variations_tag[2]})
                 if self.name_site == "bikester.fr":
+                    variations = product.find(variations_tag[0], attrs={variations_tag[1]:variations_tag[2]})
                     if variations:
                         if variations.find("span"):
                             variations = product.find(variations_tag[0], attrs={variations_tag[1]:variations_tag[2]}).find_all("span")
@@ -178,10 +188,20 @@ class sites():
                     else:
                         variations = ""
                 if self.name_site == "probikeshop.fr":
+                    variations = product.find(variations_tag[0], attrs={variations_tag[1]:variations_tag[2]})
                     if variations:
                         variations = self.remove_blank_list( self.trim_the_ends(variations.contents[0]).split(",") )
                 #if variations != "":
                 #    matox[marque + " " + name] = {"marque":marque, "name":name, "prix":prix, "variations":variations, "name_search":name_search, "name_site":name_site, "fullname":marque + " " + name}
+                if self.name_site == "alltricks.fr":
+                    #print(product)
+                    variations_temp = product.find_all(variations_tag[0], attrs={variations_tag[1]:variations_tag[2]})
+                    #print(variations_temp)
+                    #exit()
+                    variationlist = list()
+                    for variation in variations_temp:
+                        variationlist.append(variation.contents[0])
+                    variations = variationlist
                 if marque + " " + name in matox:
                     id = str(random.randrange(0, 50000, 5))
                     matox[marque + " " + name + " " + id] = {"marque":marque.lower(), "name":name.lower(), "prix":prix, "variations":variations, "name_search":name_search, "name_site":self.name_site, "fullname":marque.lower() + " " + name.lower()}

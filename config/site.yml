@@ -16,3 +16,11 @@ probikeshop.fr:
   marque: "" #"span,itemprop,name"
   variations: "span,class,productInfoComplementary_stock"
   number_articles: ""
+alltricks.fr:
+  name_tree: "div,class,alltricks-Product--3columns" #"div,class,alltricks-Pager__item"
+  price: "span,class,alltricks-Product-price" #"span,data-price-product-obj,"
+  price_sale: ""
+  name: "a,class,alltricks-Product-description" #"a,class,alltricks-Product-description"
+  marque: "strong,class,alltricks-Product-brandLabel"
+  variations: "p,class,alltricks-ChildSelector-customOptionLabel" #"div,class,alltricks-ChildSelector-customOptions-group"
+  number_articles: "" #"div,class,alltricks-ProductListingHeader__item--left"
