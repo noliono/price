@@ -11,6 +11,8 @@ elastic:
   index: "prix-test"
 level: DEBUG
 tosurvey:
+  alltricks-elec: https://www.alltricks.fr/C-834161-velos-de-route-electriques
+  alltricks-treck: https://www.alltricks.fr/C-45873-velos-de-voyage-randonnee
   decathlon-sailing: https://www.decathlon.fr/search?Ntt=tribord+sailing+500
   decathlon-cargo: https://www.decathlon.fr/browse/c0-tous-les-sports/c1-velo-de-ville/c2-velo-de-ville/nature-velo-cargo/_/N-2ub1rzZ8o5chjZ1o76joc
   decathlon-roues: https://www.decathlon.fr/browse/c0-tous-les-sports/c1-velo-cyclisme/c4-roues-velo/_/N-1xj22fxZ1ubzga0ZvhmwjpZ1cgl8hyZnbzutd
