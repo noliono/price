@@ -11,6 +11,7 @@ elastic:
   index: "prix-test"
 level: DEBUG
 tosurvey:
+  aliexpress-minipc: https://fr.aliexpress.com/af/mini-pc.html?trafficChannel=af&SearchText=mini+pc&ltype=affiliate&SortType=default&page=1&CatId=0
   alltricks-elec: https://www.alltricks.fr/C-834161-velos-de-route-electriques
   alltricks-treck: https://www.alltricks.fr/C-45873-velos-de-voyage-randonnee
   decathlon-sailing: https://www.decathlon.fr/search?Ntt=tribord+sailing+500
