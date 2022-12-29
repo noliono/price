@@ -5,7 +5,7 @@
 from urllib.parse import urlparse
 from elasticsearch import Elasticsearch
 from datetime import datetime
-import time
+#import time
 import yaml #pyyaml
 #import re
 #import random
@@ -75,7 +75,9 @@ for name_search,URL in configyml["tosurvey"].items():
 
 ################################### Change détection and send mail
 
-time.sleep(5) #To avoid no index of actual data indexes
+#time.sleep(5) #To avoid no index of actual data indexes
+es.indices.refresh(index=elasticindex)
+#es.cluster.health(wait_for_no_relocating_shards=True,wait_for_active_shards='all')
 
 SMTPserver = configyml["mail"]["smtp"]
 sender = "'" + configyml["mail"]["sender"] + "'"
