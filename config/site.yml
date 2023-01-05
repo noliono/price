@@ -1,11 +1,13 @@
 bikester.fr:
-  name_tree: "div,class,product-tile-inner" #div,id,data-uv-item ??
+  name_tree: "div,class,js-product-tile-lazyload" #"div,class,product-tile-inner"
+  #<div id="4933cef7f431080065fcb006af" data-productid="G1520768" data-masterid="M1033235" class="js-product-tile-lazyload gtm-producttile product-tile  uv-item   product-tile--notavailable" data-uv-item="{&quot;id&quot;:&quot;1520768&quot;,&quot;unit_sale_price&quot;:3819}" data-gtm-productdata="{&quot;name&quot;:&quot;Cube Kathmandu Hybrid EXC 750 Entrée basse, vert&quot;,&quot;id&quot;:&quot;1520768&quot;,&quot;brand&quot;:&quot;Cube&quot;,&quot;price&quot;:3182.5,&quot;dimension42&quot;:&quot;Unavailable&quot;,&quot;dimension43&quot;:&quot;vert&quot;,&quot;dimension50&quot;:&quot;false&quot;,&quot;metric4&quot;:3819,&quot;metric7&quot;:0,&quot;metric8&quot;:1,&quot;variant&quot;:&quot;46cm | XS (28\&quot;)&quot;,&quot;dimension53&quot;:&quot;46cm | XS (28\&quot;)&quot;}">
   price: "span,class,price-standard"
   price_sale: "span,class,price-sales"
   name: "div,class,product-name"
   marque: "div,class,cyc-typo_subheader"
   variations: "span,class,variations"
   number_articles: "span,class,cyc-typo_subheader"
+  #id: "div,class,js-product-tile-lazyload" #"div,data-gtm-productdata" #"div,class,grid-tile"
 decathlon.fr:
   name_tree: "script,id,__dkt"
 probikeshop.fr:

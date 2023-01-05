@@ -59,9 +59,11 @@ class sites():
         with open('config/site.yml', 'r') as file:
             self.siteyml = yaml.safe_load(file)
         self.response = requests.get(URL, headers=self.headers)
+        #print(self.response.text)
         self.soup = bs4.BeautifulSoup(self.response.text, "html.parser")
         self.name_tree_tag = self.siteyml[name_site]["name_tree"].split(',')
         self.products = self.soup.find_all(self.name_tree_tag[0], attrs={self.name_tree_tag[1]:self.name_tree_tag[2]})
+        #self.products = self.soup.find_all("script")
 
     def trim_the_ends(self,x):
         """
@@ -105,9 +107,12 @@ class sites():
 
     def aliexpress(self,name_search): #Page multiples à gérer
         matox = dict()
-        #print(self.products[3])
+        print(self.products)
+        exit()
         #print(self.products[3].contents[0])
-        myjson = self.products[3].contents[0].split("window.runParams = ", 1)[1].split("window.runParams.csrfToken",1)[0]
+        #myjson = self.products[3].contents[0].split("window.runParams = ", 1)[1].split("window.runParams.csrfToken",1)[0]
+        myjson = self.products[3].split("window._dida_config_._init_data_= ", 1)[1].split("</script>",1)[0]
+        print(json)
         #exit()
         myjson = myjson.replace(";","")
         myjson = myjson.replace("window.runParams =","")
@@ -137,6 +142,7 @@ class sites():
                     continue
                 prix = key["prices"]["salePrice"]["formattedPrice"]
                 prix = prix.replace("€ ","")
+                prix = prix.replace(".","")
                 prix = prix.replace(",",".")
                 variations = [] #version CPU / RAM / disque ... à trouver mais à des pruix différents !! => Comment le gérer !!
                 url = "https://" + self.name_site + "/item/" + supermodelId + ".html"
@@ -159,6 +165,7 @@ class sites():
 
         i = 1
         while len(matox) < number_articles:
+            #print(str(len(matox)) + " / " + str(number_articles) )
             if "page" in self.URL and i > 1:
                 self.URL = re.sub("page=[0-9]*", "page=" + str(i), self.URL)
                 logging.info("URL=" + str(self.URL))
@@ -213,6 +220,7 @@ class sites():
                     prix = prix.replace("€", "")
                     prix = prix.replace(".","")
                     prix = prix.replace(",",".")
+                    prix = prix.replace("À partir de\n","")
                 if prix == "N/A":
                     prix = ""
                 if self.name_site == "bikester.fr":
@@ -243,16 +251,46 @@ class sites():
                     for variation in variations_temp:
                         variationlist.append(variation.contents[0])
                     variations = variationlist
-                if marque + " " + name in matox:
-                    id = str(random.randrange(0, 50000, 5))
-                    matox[marque + " " + name + " " + id] = {"marque":marque.lower(), "name":name.lower(), "prix":prix, "variations":variations, "name_search":name_search, "name_site":self.name_site, "fullname":marque.lower() + " " + name.lower()}
-                    #print(matox[marque + " " + name + " " + id])
+                supermodelId = ""
+                '''
+                if self.siteyml[self.name_site]["id"]:
+                    idtag = self.siteyml[self.name_site]["id"].split(',')
+                    #supermodelId = self.trim_the_ends(self.soup.find(idtag[0], attrs={idtag[1]:idtag[2]}))
+                    supermodelId = product.find(idtag[0],attrs={idtag[1]:idtag[2]})
+                    #print(str(supermodelId))
+                    #print(supermodelId.prettify())
+                    #print(supermodelId.value)
+                    import re
+                    m = re.search( r"""data-gtm-productdata='({.*"\)"})'""", str(supermodelId) )
+                    #print(m.group(1))
+                    #print(json.loads(m.group(1)))
+                    supermodelId = json.loads(m.group(1))["id"]
+                '''
+                if self.name_site == "bikester.fr":
+                    import re
+                    m = re.search( r"""data-gtm-productdata='({.*"\)"})'""", str(product) )
+                    if m and m.group(1) and "id" in m.group(1):
+                        supermodelId = json.loads(m.group(1))["id"]
+                #exit()
+                if supermodelId != "":
+                    matox[marque + " " + name + "-" + supermodelId] = {"marque":marque.lower(), "name":name.lower(), "prix":prix, "variations":variations, "name_search":name_search, "name_site":self.name_site, "fullname":marque.lower() + " " + name.lower(), "modelId":supermodelId} #, "url":url}                    
+                    #print(marque + " " + name + "-" + supermodelId)
                 else:
-                    matox[marque + " " + name] = {"marque":marque.lower(), "name":name.lower(), "prix":prix, "variations":variations, "name_search":name_search, "name_site":self.name_site, "fullname":marque.lower() + " " + name.lower()}
-                    #print(matox[marque + " " + name])
+                    if marque + " " + name in matox:
+                        id = str(random.randrange(0, 50000, 5))
+                        matox[marque + " " + name + " " + id] = {"marque":marque.lower(), "name":name.lower(), "prix":prix, "variations":variations, "name_search":name_search, "name_site":self.name_site, "fullname":marque.lower() + " " + name.lower()}
+                        #print(matox[marque + " " + name + " " + id])
+                    else:
+                        matox[marque + " " + name] = {"marque":marque.lower(), "name":name.lower(), "prix":prix, "variations":variations, "name_search":name_search, "name_site":self.name_site, "fullname":marque.lower() + " " + name.lower()}
+                        #print(matox[marque + " " + name])
                 ## Récupération de l'ID produit qui change pour le cas de même nom de pduit : exemple : Ortler Bozen Trapèze, rouge : Année 2021 et 2022
                 #  1319869 dans le code : 
                 # <div id="5899e52714c17e73464b7fd54b" data-productid="G1319869" data-masterid="M920128" class="js-product-tile-lazyload gtm-producttile product-tile product-tile--sale uv-item   " data-uv-item={&quot;id&quot;:&quot;1319869&quot;,&quot;unit_sale_price&quot;:2239} data-gtm-productdata="{&quot;name&quot;:&quot;Ortler Bozen Trapèze, rouge&quot;,&quot;id&quot;:&quot;1319869&quot;,&quot;brand&quot;:&quot;Ortler&quot;,&quot;price&quot;:1865.83,&quot;dimension42&quot;:&quot;Available&quot;,&quot;dimension51&quot;:4.8,&quot;dimension43&quot;:&quot;rouge&quot;,&quot;dimension62&quot;:&quot;10.4&quot;,&quot;dimension49&quot;:&quot;2499&quot;,&quot;dimension50&quot;:&quot;true&quot;,&quot;metric2&quot;:260,&quot;metric4&quot;:2499,&quot;metric7&quot;:1,&quot;metric8&quot;:0,&quot;variant&quot;:&quot;45cm (28\&quot;)&quot;,&quot;dimension53&quot;:&quot;45cm (28\&quot;)&quot;}">
                 #
+            #print(str(len(matox)))
+            #if i == 6:
+            #    print(str(matox))
+            
             i = i + 1
+
         return matox

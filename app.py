@@ -62,7 +62,7 @@ for name_search,URL in configyml["tosurvey"].items():
         matox = sites.sites(URL,name_site).generic(name_search)
 
     logging.debug(matox)
-    #exit()
+    exit()
     addtoelastic(matox)
 
 ################################### Change détection and send mail
