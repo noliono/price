@@ -1,20 +1,22 @@
 #!/usr/bin/env python
 # encoding: utf-8
-#import requests
-#import bs4
 from urllib.parse import urlparse
 from elasticsearch import Elasticsearch
 from datetime import datetime
-#import time
 import yaml #pyyaml
-#import re
-#import random
 import json
 import logging
 from lib import sites
+import argparse
 
-from smtplib import SMTP_SSL as SMTP
-from email.mime.text import MIMEText
+#parser = argparse.ArgumentParser(description='Process some integers.')
+parser = argparse.ArgumentParser()
+parser.add_argument('--send',
+                    help='Send price change by masto or/and mail')
+
+args = parser.parse_args()
+#print(args.send)
+#exit()
 
 with open('config/config.yml', 'r') as file:
     configyml = yaml.safe_load(file)
@@ -62,20 +64,13 @@ for name_search,URL in configyml["tosurvey"].items():
         matox = sites.sites(URL,name_site).generic(name_search)
 
     logging.debug(matox)
-    exit()
+    #exit()
     addtoelastic(matox)
 
 ################################### Change détection and send mail
 
 es.indices.refresh(index=elasticindex)
 
-SMTPserver = configyml["mail"]["smtp"]
-sender = "'" + configyml["mail"]["sender"] + "'"
-destination = configyml["mail"]["recipient"]
-USERNAME = configyml["mail"]["login"]
-PASSWORD = configyml["mail"]["password"]
-text_subtype = 'plain'
-subject="Evolution prix"
 content=""
 
 ## Requête elastic pour récupérer une liste de matériel
@@ -108,21 +103,52 @@ for mato in matoxlist:
     if NewPrice != ActualPrice:
         content = content + PrintableMato(mato) + " : Price change : From " + str(ActualPrice) + " to " + str(NewPrice) + "\r\n"
 
-if len(content) != 0:
-    try:
-        msg = MIMEText(content, text_subtype)
-        msg['Subject']= subject
-        msg['From']   = sender # some SMTP servers will do this automatically, not all
-        conn = SMTP(SMTPserver)
-        conn.set_debuglevel(False)
-        conn.login(USERNAME, PASSWORD)
-        try:
-            conn.sendmail(sender, destination.split(','), msg.as_string())
-            logging.info("Send mail with this change : " + str(content))
-        finally:
-            conn.quit()
 
-    except Exception as exc:
-        logging.error(exc)
+if args.send == "masto":
+    from mastodon import Mastodon
+    Mastodon.create_app(
+        'pytooterapp',
+        api_base_url = configyml["masto"]["api_base_url"],
+        to_file = 'pytooter_clientcred.secret'
+    )
+
+    mastodon = Mastodon(client_id = 'pytooter_clientcred.secret',)
+    mastodon.log_in(
+        configyml["masto"]["login"],
+        configyml["masto"]["password"],
+        to_file = 'pytooter_usercred.secret'
+    )
+
+    mastodon.toot(content)
+
+if args.send == "mail":
+    from smtplib import SMTP_SSL as SMTP
+    from email.mime.text import MIMEText
+
+
+    SMTPserver = configyml["mail"]["smtp"]
+    sender = "'" + configyml["mail"]["sender"] + "'"
+    destination = configyml["mail"]["recipient"]
+    USERNAME = configyml["mail"]["login"]
+    PASSWORD = configyml["mail"]["password"]
+    text_subtype = 'plain'
+    subject="Evolution prix"
+
+    if len(content) != 0:
+        try:
+            msg = MIMEText(content, text_subtype)
+            msg['Subject']= subject
+            msg['From']   = sender # some SMTP servers will do this automatically, not all
+            conn = SMTP(SMTPserver)
+            conn.set_debuglevel(False)
+            conn.login(USERNAME, PASSWORD)
+            try:
+                conn.sendmail(sender, destination.split(','), msg.as_string())
+                logging.info("Send mail with this change : " + str(content))
+            finally:
+                conn.quit()
+
+        except Exception as exc:
+            logging.error(exc)
 
 logging.info("################ Script end #################################")
