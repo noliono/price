@@ -9,6 +9,10 @@ elastic:
   apiid: 
   apikey:
   index: "prix-test"
+masto:
+  api_base_url: https://piaille.org
+  login: xxx@xxx.com
+  password: yyyy
 level: DEBUG
 tosurvey:
   aliexpress-minipc: https://fr.aliexpress.com/af/mini-pc.html?trafficChannel=af&SearchText=mini+pc&ltype=affiliate&SortType=default&page=1&CatId=0
