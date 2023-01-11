@@ -268,10 +268,9 @@ class sites():
                 '''
                 if self.name_site == "bikester.fr":
                     import re
-                    m = re.search( r"""data-gtm-productdata='({.*"\)"})'""", str(product) )
+                    m = re.search( r"""data-gtm-productdata='({.*})' data-masterid=""", str(product) )
                     if m and m.group(1) and "id" in m.group(1):
                         supermodelId = json.loads(m.group(1))["id"]
-                #exit()
                 if supermodelId != "":
                     matox[marque + " " + name + "-" + supermodelId] = {"marque":marque.lower(), "name":name.lower(), "prix":prix, "variations":variations, "name_search":name_search, "name_site":self.name_site, "fullname":marque.lower() + " " + name.lower(), "modelId":supermodelId} #, "url":url}                    
                     #print(marque + " " + name + "-" + supermodelId)

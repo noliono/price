@@ -18,6 +18,8 @@ args = parser.parse_args()
 #print(args.send)
 #exit()
 
+subject="Evolution prix"
+
 with open('config/config.yml', 'r') as file:
     configyml = yaml.safe_load(file)
 
@@ -39,6 +41,17 @@ def addtoelastic(matox):
         resp = es.index(index=elasticindex, document=mato)
 
 def PrintableMato(mato):
+    #PrintableMato = " - name_site = " + str(mato["name_site"]) + " / fullname = " + str(mato["fullname"]) 
+    PrintableMato = "- " + str(mato["fullname"])
+    #if "modelId" in mato:
+    #    PrintableMato += " / Id = " + str(mato["modelId"])
+    if "url" in mato:
+        PrintableMato += " / " + mato["url"]
+    else:
+        PrintableMato +=  " / " + str(mato["name_site"]) 
+    return PrintableMato
+
+def PrintableMato_old(mato):
     PrintableMato = " - name_site = " + str(mato["name_site"]) + " / fullname = " + str(mato["fullname"]) 
     if "modelId" in mato:
         PrintableMato += " / Id = " + str(mato["modelId"])
@@ -99,9 +112,9 @@ for mato in matoxlist:
         continue
     NewPrice = resp["hits"]["hits"][0]["_source"]["prix"]
     ActualPrice = resp["hits"]["hits"][1]["_source"]["prix"]
-    logging.debug( "Mato : " + PrintableMato(mato) + " / ActualPrice : " + str(ActualPrice) + " / NewPrice : " + str(NewPrice) )
+    logging.debug( "Mato : " + PrintableMato(mato) + " ## " + str(ActualPrice) + " -> " + str(NewPrice) )
     if NewPrice != ActualPrice:
-        content = content + PrintableMato(mato) + " : Price change : From " + str(ActualPrice) + " to " + str(NewPrice) + "\r\n"
+        content = content + PrintableMato(mato) + " ## " + str(ActualPrice) + " -> " + str(NewPrice) + "\r\n"
 
 
 if args.send == "masto":
@@ -119,7 +132,19 @@ if args.send == "masto":
         to_file = 'pytooter_usercred.secret'
     )
 
-    mastodon.toot(content)
+    if len(content) != 0:
+        limitmasto = 500
+        if len(content) >= limitmasto:
+            newcontent = ""
+            for cont in content.split("\r\n"):
+                if len(newcontent) + len(cont) < limitmasto:
+                    newcontent += cont + "\r\n"
+                else:
+                    logging.info(newcontent + " ///// " + str(len(newcontent)))
+                    mastodon.status_post(newcontent, spoiler_text=subject)
+                    newcontent = ""
+        else:
+            mastodon.status_post(content, spoiler_text=subject)
 
 if args.send == "mail":
     from smtplib import SMTP_SSL as SMTP
@@ -132,7 +157,6 @@ if args.send == "mail":
     USERNAME = configyml["mail"]["login"]
     PASSWORD = configyml["mail"]["password"]
     text_subtype = 'plain'
-    subject="Evolution prix"
 
     if len(content) != 0:
         try:
