@@ -140,7 +140,6 @@ if args.send == "masto":
                 if len(newcontent) + len(cont) < limitmasto:
                     newcontent += cont + "\r\n"
                 else:
-                    logging.info(newcontent + " ///// " + str(len(newcontent)))
                     mastodon.status_post(newcontent, spoiler_text=subject)
                     newcontent = ""
         else:
@@ -149,7 +148,6 @@ if args.send == "masto":
 if args.send == "mail":
     from smtplib import SMTP_SSL as SMTP
     from email.mime.text import MIMEText
-
 
     SMTPserver = configyml["mail"]["smtp"]
     sender = "'" + configyml["mail"]["sender"] + "'"

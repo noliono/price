@@ -268,11 +268,37 @@ class sites():
                 '''
                 if self.name_site == "bikester.fr":
                     import re
+                    '''
                     m = re.search( r"""data-gtm-productdata='({.*})' data-masterid=""", str(product) )
                     if m and m.group(1) and "id" in m.group(1):
                         supermodelId = json.loads(m.group(1))["id"]
+                    '''
+                    #data-productid="G1791454"
+                    '''
+                    m = re.search( r"""data-productid=\"G(.*)\" data-uv-item=""", str(product) )
+                    if m and m.group(1):
+                        supermodelId = m.group(1)
+                    '''
+                    #data-uv-item='{"id":"1392315","unit_sale_price":2429}' id
+                    m = re.search( r"""data-uv-item='(.*)' id""", str(product) )
+                    if m and m.group(1) and "id" in m.group(1):
+                        supermodelId = json.loads(m.group(1))["id"]
+                    
+                    link = product.find("a",attrs={"class":"js_producttile-link"})
+                    m = re.search( r"""href="(.*)" title=""", str(link) )
+                    if m and m.group(1):
+                        uri = m.group(1)
+                    url = "https://www." + self.name_site + uri
+                    '''
+                    if supermodelId == "":
+                        print(product)
+                        print(str(supermodelId) + " / " + url)
+                    '''
                 if supermodelId != "":
-                    matox[marque + " " + name + "-" + supermodelId] = {"marque":marque.lower(), "name":name.lower(), "prix":prix, "variations":variations, "name_search":name_search, "name_site":self.name_site, "fullname":marque.lower() + " " + name.lower(), "modelId":supermodelId} #, "url":url}                    
+                    if url and url != "":
+                        matox[marque + " " + name + "-" + supermodelId] = {"marque":marque.lower(), "name":name.lower(), "prix":prix, "variations":variations, "name_search":name_search, "name_site":self.name_site, "fullname":marque.lower() + " " + name.lower(), "modelId":supermodelId, "url":url}
+                    else:
+                        matox[marque + " " + name + "-" + supermodelId] = {"marque":marque.lower(), "name":name.lower(), "prix":prix, "variations":variations, "name_search":name_search, "name_site":self.name_site, "fullname":marque.lower() + " " + name.lower(), "modelId":supermodelId} #, "url":url}
                     #print(marque + " " + name + "-" + supermodelId)
                 else:
                     if marque + " " + name in matox:
