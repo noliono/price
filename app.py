@@ -34,11 +34,14 @@ if not configyml["elastic"]["apiid"]:
     es = Elasticsearch(ELASTIC_NODES)
 
 elasticindex = configyml["elastic"]["index"]
+now = datetime.now()
+elasticindexMonth = elasticindex + "-" + now.strftime("%Y.%m")
+
 
 def addtoelastic(matox):
     for key,mato in matox.items():
         mato["@timestamp"] = datetime.utcnow()
-        resp = es.index(index=elasticindex, document=mato)
+        resp = es.index(index=elasticindexMonth, document=mato)
 
 def PrintableMato(mato):
     #PrintableMato = " - name_site = " + str(mato["name_site"]) + " / fullname = " + str(mato["fullname"]) 
@@ -82,9 +85,11 @@ for name_search,URL in configyml["tosurvey"].items():
 
 ################################### Change détection and send mail
 
-es.indices.refresh(index=elasticindex)
+es.indices.refresh(index=elasticindexMonth)
 
 content=""
+
+elasticindex = elasticindex + "*"
 
 ## Requête elastic pour récupérer une liste de matériel
 resp = es.search(index=elasticindex, sort={ "@timestamp": { "order": "desc"} },size=1500)
