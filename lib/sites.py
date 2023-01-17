@@ -216,6 +216,7 @@ class sites():
                 if prix == "PVC" or prix == "" or prix == "*" and price_sale_tag != "":
                     prix = self.trim_the_ends( product.find(price_sale_tag[0], attrs={price_sale_tag[1]:price_sale_tag[2]}).contents[0] )
                 if prix and type(prix) == str:
+                    prix = self.trim_the_ends( prix )
                     prix = prix.replace(" €", "")
                     prix = prix.replace("€", "")
                     prix = prix.replace(".","")
