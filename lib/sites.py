@@ -295,6 +295,17 @@ class sites():
                         print(product)
                         print(str(supermodelId) + " / " + url)
                     '''
+                if self.name_site == "probikeshop.fr":
+                    import re
+                    link = product.find("a",attrs={"class":"product_link"})
+                    m = re.search( r"""href="(.*)">""", str(link) )
+                    if m and m.group(1):
+                        uri = m.group(1)
+                    url = "https://www." + self.name_site + uri
+                    supermodelId = uri.split("/")[-1].strip(".html")
+                    #print(str(supermodelId) + " //" + str(url))
+                    #exit()
+
                 if supermodelId != "":
                     if url and url != "":
                         matox[marque + " " + name + "-" + supermodelId] = {"marque":marque.lower(), "name":name.lower(), "prix":prix, "variations":variations, "name_search":name_search, "name_site":self.name_site, "fullname":marque.lower() + " " + name.lower(), "modelId":supermodelId, "url":url}
