@@ -306,6 +306,19 @@ class sites():
                     #print(str(supermodelId) + " //" + str(url))
                     #exit()
 
+                if self.name_site == "alltricks.fr":
+                    import re
+
+                    m = re.search( r"""href="(\/?\/?[^\s]+)">""", str(product) )
+                    if m and m.group(1):
+                        uri = m.group(1)
+                    url = "https://www." + self.name_site + uri
+                    
+                    m = re.search( r"""data-product-id="([0-9]*)" """, str(product) )
+                    if m and m.group(1):
+                        supermodelId = m.group(1)
+
+
                 if supermodelId != "":
                     if url and url != "":
                         matox[marque + " " + name + "-" + supermodelId] = {"marque":marque.lower(), "name":name.lower(), "prix":prix, "variations":variations, "name_search":name_search, "name_site":self.name_site, "fullname":marque.lower() + " " + name.lower(), "modelId":supermodelId, "url":url}
