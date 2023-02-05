@@ -151,6 +151,7 @@ class sites():
 
     def generic(self,name_search):
         matox = dict()
+        variations = ""
         # Get html tag from config
         price_tag = self.siteyml[self.name_site]["price"].split(',')
         price_sale_tag = self.siteyml[self.name_site]["price_sale"].split(',')
@@ -187,7 +188,7 @@ class sites():
                     if self.name_site == "probikeshop.fr" or self.name_site == "alltricks.fr" and marque:
                         for marquee in marque:
                             marque = self.trim_the_ends(marquee)
-                    elif self.name_site == "bikester.fr" and marque:
+                    elif self.name_site == "bikester.fr" or self.name_site == "cyclable.com" and marque:
                         marque = self.trim_the_ends( product.find(marque_tag[0], attrs={marque_tag[1]:marque_tag[2]}).contents[0] )
                 else:
                     marque = "Inconnu" #Cas probikeshop
@@ -220,6 +221,7 @@ class sites():
                     prix = prix.replace(" €", "")
                     prix = prix.replace("€", "")
                     prix = prix.replace(".","")
+                    prix = prix.replace(" ","")
                     prix = prix.replace(",",".")
                     prix = prix.replace("À partir de\n","")
                 if prix == "N/A":
@@ -318,6 +320,16 @@ class sites():
                     if m and m.group(1):
                         supermodelId = m.group(1)
 
+
+                if self.name_site == "cyclable.com":
+                    import re
+
+                    m = re.search( r"""data-id-product=\"([0-9]*)\" href=\"(\w+:\/?\/?[^\s]+)\"""", str(product) )
+                    if m and m.group(2):
+                        url = m.group(2)
+                    
+                    if m and m.group(1):
+                        supermodelId = m.group(1)
 
                 if supermodelId != "":
                     if url and url != "":
