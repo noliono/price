@@ -353,6 +353,9 @@ class sites():
             #if i == 6:
             #    print(str(matox))
             
+            if i < 40:
+                break
+
             i = i + 1
 
         return matox
