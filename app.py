@@ -111,9 +111,9 @@ if args.send:
     for mato in matoxlist:        
         ## Requête elastic par matériel
         if "modelId" in mato:
-            resp = es.search(index=elasticindex, query={ "bool": { "must": [ { "term": { "fullname": mato["fullname"] }},{"term": { "name_site": mato["name_site"]}},{"term": { "modelId": mato["modelId"] }}] } },sort={ "@timestamp": { "order": "desc"} },size=2)
+            resp = es.search(index=elasticindex, query={ "bool": { "must": [ { "match": { "fullname": mato["fullname"] }},{"term": { "name_site": mato["name_site"]}},{"term": { "modelId": mato["modelId"] }}] } },sort={ "@timestamp": { "order": "desc"} },size=2)
         else:
-            resp = es.search(index=elasticindex, query={ "bool": { "must": [ { "term": { "fullname": mato["fullname"] }},{"term": { "name_site": mato["name_site"]}}] } },sort={ "@timestamp": { "order": "desc"} },size=2)
+            resp = es.search(index=elasticindex, query={ "bool": { "must": [ { "match": { "fullname": mato["fullname"] }},{"term": { "name_site": mato["name_site"]}}] } },sort={ "@timestamp": { "order": "desc"} },size=2)
         if len(resp["hits"]["hits"]) <= 1:
             continue
         NewPrice = resp["hits"]["hits"][0]["_source"]["prix"]
