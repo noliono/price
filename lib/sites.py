@@ -90,6 +90,49 @@ class sites():
 
     def decathlon(self,name_search):
         matox = dict()
+
+        datas = json.loads(self.products[0].contents[0])["_ctx"]["data"]
+        #print(json.dumps(json.loads(self.products[0].contents[0])))
+        #print(json.dumps(datas))
+        #print(json.dumps(datas[5]["data"]["blocks"]["items"]))
+        #exit()
+        items = datas[5]["data"]["blocks"]["items"]
+        #print(items)
+
+        while len(items) != 0 :
+
+            #print(self.URL)            
+            
+            #print(json.dumps(items))
+            for kk in items:
+                marque = kk["brand"]["label"]
+                supermodelId = kk["supermodelId"]
+                for kkk in kk["models"]:
+                    name = kkk["webLabel"]
+                    prix = kkk["price"]
+                    variations = kkk["availableSizes"]
+                    url = "https://" + self.name_site + "/" + kkk["url"]
+                    matox[marque + " " + name + "-" + supermodelId] = {"marque":marque.lower(), "name":name.lower(), "prix":prix, "variations":variations, "name_search":name_search, "name_site":self.name_site, "fullname":marque.lower() + " " + name.lower(), "modelId":supermodelId, "url":url}
+
+            pattern = re.compile(r"from=(\d+)&size=(\d+)")
+            newstart = int(pattern.search(self.URL).group(1)) + int(pattern.search(self.URL).group(2))
+            self.URL = re.sub(r"from=\d+", "from=" + str(newstart), self.URL)
+            logging.info("URL=" + str(self.URL))
+            self.response = requests.get(self.URL, headers=self.headers)
+            self.soup = bs4.BeautifulSoup(self.response.text, "html.parser")
+            self.products = self.soup.find_all(self.name_tree_tag[0], attrs={self.name_tree_tag[1]:self.name_tree_tag[2]})            
+        
+            items = list()
+
+            datas = json.loads(self.products[0].contents[0])["_ctx"]["data"]
+            items = datas[5]["data"]["blocks"]["items"]
+            
+            #print(items)
+        #print(matox)
+        #exit()
+
+
+        '''
         jsonresult = json.loads(self.products[0].contents[0])
         for key in jsonresult["_ctx"]["data"]:
             if "Super" in key["id"]:
@@ -102,6 +145,7 @@ class sites():
                         variations = kkk["availableSizes"]
                         url = "https://" + self.name_site + "/" + kkk["url"]
                         matox[marque + " " + name + "-" + supermodelId] = {"marque":marque.lower(), "name":name.lower(), "prix":prix, "variations":variations, "name_search":name_search, "name_site":self.name_site, "fullname":marque.lower() + " " + name.lower(), "modelId":supermodelId, "url":url}
+        '''
         return matox
 
 
@@ -160,26 +204,45 @@ class sites():
         variations_tag = self.siteyml[self.name_site]["variations"].split(',')
         if self.siteyml[self.name_site]["number_articles"]:
             number_articles = self.siteyml[self.name_site]["number_articles"].split(',')
-            number_articles = int(self.trim_the_ends(self.soup.find(number_articles[0], attrs={number_articles[1]:number_articles[2]}).contents[0].replace("Articles","")))
+            if self.name_site == "probikeshop.fr":
+                number_articles = int(self.soup.find(number_articles[0], attrs={number_articles[1]:number_articles[2]})["value"])
+            else:
+                number_articles = int(self.trim_the_ends(self.soup.find(number_articles[0], attrs={number_articles[1]:number_articles[2]}).contents[0].replace("Articles","")).replace(".",""))
         else:
-            number_articles = 1
+            number_articles = 100000 #1
+
+        if self.siteyml[self.name_site]["number_pages"]:
+            number_pages_key = self.siteyml[self.name_site]["number_pages"].split(',')
+            number_pages2 = self.soup.find(number_pages_key[0],attrs={number_pages_key[1]:number_pages_key[2]})
+            try:
+                number_pages = int(number_pages2.find_all(number_pages_key[3])[-2].find(number_pages_key[4]).contents[0])
+            except: 
+                number_pages = 1
+                logging.info("No page found !")
+        else:
+            number_pages = 1000
 
         i = 1
-        while len(matox) < number_articles:
+        alea = 3
+        while len(matox) < number_articles - alea and i <= number_pages:
+            #print(str(len(matox)) + "/" + str(number_articles) + "/" + str(i) + "/" + str(number_pages))
             #print(str(len(matox)) + " / " + str(number_articles) )
-            if "page" in self.URL and i > 1:
-                self.URL = re.sub("page=[0-9]*", "page=" + str(i), self.URL)
-                logging.info("URL=" + str(self.URL))
-                self.response = requests.get(self.URL, headers=self.headers)
-                self.soup = bs4.BeautifulSoup(self.response.text, "html.parser")
-                self.products = self.soup.find_all(self.name_tree_tag[0], attrs={self.name_tree_tag[1]:self.name_tree_tag[2]})
+            pageslist=["page=","p="]
+            for page in pageslist:
+                if page in self.URL and i > 1:
+                    self.URL = re.sub(page+"[0-9]*", page + str(i), self.URL)
+                    logging.info("URL=" + str(self.URL))
+                    self.response = requests.get(self.URL, headers=self.headers)
+                    self.soup = bs4.BeautifulSoup(self.response.text, "html.parser")
+                    self.products = self.soup.find_all(self.name_tree_tag[0], attrs={self.name_tree_tag[1]:self.name_tree_tag[2]})
 
             if not self.products:
                 logging.error("Error: No products found !")
                 logging.debug(self.response.text)
                 continue #exit()
 
-            TypesInName = ['Vélo de Randonnée', 'Velo de Voyage / Velotaf','Vélo de Voyage','Vélo de Route Électrique']
+            TypesInName = ['Vélo de Randonnée', 'Velo de Voyage / Velotaf','Vélo de Voyage','Vélo de Route Électrique', 'Vélo de Ville', 'vélo de ville', 
+            'vtc électrique', 'vélo de course électrique', 'vélo de gravel', 'vélo de course', 'vtt électrique', 'vtt enfant', 'vtt trail/enduro', 'cross country', 'vtt trail/randonnée','vtt trail','vtc électrique', 'vtc enfant','vtc','vtt']
 
             for product in self.products:
                 logging.debug("product = " + str(product))
@@ -196,13 +259,21 @@ class sites():
                     return matox
                 name = self.trim_the_ends( product.find(name_tag[0], attrs={name_tag[1]:name_tag[2]}).contents[0] )
                 for TypeInName in TypesInName:
-                    name = name.replace(TypeInName + " ","")
+                    if name:
+                        name = name.lower().replace(TypeInName.lower() + " - ","")
+                        name = name.lower().replace(TypeInName.lower() + " ","")
+                        name = name.lower().replace(TypeInName.lower(),"")
+                    if marque:
+                        marque = marque.lower().replace(TypeInName.lower() + " - ","")
+                        marque = marque.lower().replace(TypeInName.lower() + " ","")
+                        marque = marque.lower().replace(TypeInName.lower(),"")
                     #name = unidecode.unidecode(name).replace(unidecode.unidecode(TypeInName + " ","")
-                if marque == "Inconnu": #Try to get from name
+                if marque == "inconnu": #Try to get from name
                     marque = name.split(" ")[0]
                     if marque == "VSF":
                         marque = "VSF FAHRRADMANUFAKTUR"
-                name = name.replace(marque + " ","")
+                if marque and name:
+                    name = name.replace(marque + " ","")
                 prix = product.find(price_tag[0], attrs={price_tag[1]:price_tag[2]})
                 if self.name_site == "alltricks.fr":
                     prix = self.trim_the_ends( prix.contents[len(prix)-1].contents[0]).encode('ascii','ignore').decode()
@@ -223,7 +294,8 @@ class sites():
                     prix = prix.replace(".","")
                     prix = prix.replace(" ","")
                     prix = prix.replace(",",".")
-                    prix = prix.replace("À partir de\n","")
+                    #prix = prix.replace("À partir de\n","")
+                    prix = prix.replace("Àpartirde\n","")
                 if prix == "N/A":
                     prix = ""
                 if self.name_site == "bikester.fr":
@@ -331,13 +403,13 @@ class sites():
                     if m and m.group(1):
                         supermodelId = m.group(1)
 
-                if supermodelId != "":
+                if supermodelId != "" and marque:
                     if url and url != "":
                         matox[marque + " " + name + "-" + supermodelId] = {"marque":marque.lower(), "name":name.lower(), "prix":prix, "variations":variations, "name_search":name_search, "name_site":self.name_site, "fullname":marque.lower() + " " + name.lower(), "modelId":supermodelId, "url":url}
                     else:
                         matox[marque + " " + name + "-" + supermodelId] = {"marque":marque.lower(), "name":name.lower(), "prix":prix, "variations":variations, "name_search":name_search, "name_site":self.name_site, "fullname":marque.lower() + " " + name.lower(), "modelId":supermodelId} #, "url":url}
                     #print(marque + " " + name + "-" + supermodelId)
-                else:
+                elif marque:
                     if marque + " " + name in matox:
                         id = str(random.randrange(0, 50000, 5))
                         matox[marque + " " + name + " " + id] = {"marque":marque.lower(), "name":name.lower(), "prix":prix, "variations":variations, "name_search":name_search, "name_site":self.name_site, "fullname":marque.lower() + " " + name.lower()}
@@ -353,7 +425,7 @@ class sites():
             #if i == 6:
             #    print(str(matox))
             
-            if i < 40:
+            if i > 40:
                 break
 
             i = i + 1

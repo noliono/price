@@ -24,16 +24,32 @@ ELASTIC_NODES = configyml["elastic"]["nodes"]
 if not configyml["elastic"]["apiid"]:
     es = Elasticsearch(ELASTIC_NODES)
 
-elasticindex = configyml["elastic"]["index"]
-
-now = datetime.now()
-elasticindexMonth = elasticindex + "-" + now.strftime("%Y.%m")
-
+#elasticindex = configyml["elastic"]["index"]
 
 def addtoelastic(matox):
+    elasticindexMonth = configyml["elastic"]["index"] + "-" + datetime.now().strftime("%Y.%m")
     for key,mato in matox.items():
         mato["@timestamp"] = datetime.utcnow()
         resp = es.index(index=elasticindexMonth, document=mato)
+    es.indices.refresh(index=elasticindexMonth)
+
+def searchelastic(matox):
+    elasticindex = configyml["elastic"]["index"] + "*"
+    newmatox = dict()
+    for key,mato in matox.items():
+        if "modelId" in mato:
+            resp = es.search(index=elasticindex, query={ "bool": { "must": [ { "match_phrase": { "fullname": mato["fullname"] }},{"term": { "name_site": mato["name_site"]}},{"term": { "modelId": mato["modelId"] }}] } },sort={ "@timestamp": { "order": "desc"} },size=1)
+        else:
+            resp = es.search(index=elasticindex, query={ "bool": { "must": [ { "match_phrase": { "fullname": mato["fullname"] }},{"term": { "name_site": mato["name_site"]}}] } },sort={ "@timestamp": { "order": "desc"} },size=1)
+
+        if len(resp["hits"]["hits"]) >= 1:
+            NewPrice = mato["prix"]
+            ActualPrice = resp["hits"]["hits"][0]["_source"]["prix"]
+            if NewPrice != ActualPrice:
+                newmatox[key] = mato
+        else:
+            newmatox[key] = mato
+    return newmatox
 
 def PrintableMato(mato):
     #PrintableMato = " - name_site = " + str(mato["name_site"]) + " / fullname = " + str(mato["fullname"]) 
@@ -82,15 +98,14 @@ subject="Evolution prix"
 if args.fetchwebsite:
     matox = fetchwebsite()
 if args.storeelastic and matox:
+    matox = searchelastic(matox)
     addtoelastic(matox)
-    es.indices.refresh(index=elasticindexMonth)
 
 ################################### Change détection and send mail
 
 if args.send:
 
     content=""
-    elasticindex = elasticindex + "*"
 
     ## Requête elastic pour récupérer une liste de matériel
     resp = es.search(index=elasticindex, sort={ "@timestamp": { "order": "desc"} },size=1500)
@@ -110,6 +125,7 @@ if args.send:
 
     for mato in matoxlist:        
         ## Requête elastic par matériel
+        elasticindex = elasticindex + "*"
         if "modelId" in mato:
             resp = es.search(index=elasticindex, query={ "bool": { "must": [ { "match_phrase": { "fullname": mato["fullname"] }},{"term": { "name_site": mato["name_site"]}},{"term": { "modelId": mato["modelId"] }}] } },sort={ "@timestamp": { "order": "desc"} },size=2)
         else:
@@ -146,10 +162,10 @@ if args.send:
                     if len(newcontent) + len(cont) < limitmasto:
                         newcontent += cont + "\r\n"
                     else:
-                        mastodon.status_post(newcontent, spoiler_text=subject)
+                        mastodon.status_post(newcontent) #, spoiler_text=subject)
                         newcontent = ""
             else:
-                mastodon.status_post(content, spoiler_text=subject)
+                mastodon.status_post(content) #, spoiler_text=subject)
 
     if args.send == "mail":
         from smtplib import SMTP_SSL as SMTP
