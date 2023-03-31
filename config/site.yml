@@ -8,6 +8,7 @@ bikester.fr:
   variations: "span,class,variations"
   number_articles: "span,class,cyc-typo_subheader"
   #id: "div,class,js-product-tile-lazyload" #"div,data-gtm-productdata" #"div,class,grid-tile"
+  number_pages: ""
 decathlon.fr:
   name_tree: "script,id,__dkt"
 probikeshop.fr:
@@ -17,7 +18,9 @@ probikeshop.fr:
   name: "span,class,product_title"
   marque: "" #"span,itemprop,name"
   variations: "span,class,productInfoComplementary_stock"
-  number_articles: ""
+  #number_articles: "span,class,listingHeadSubtitle_nb"
+  number_articles: "input,class,nbProducts"
+  number_pages: ""
 alltricks.fr:
   name_tree: "div,class,alltricks-Product--3columns" #"div,class,alltricks-Pager__item"
   price: "span,class,alltricks-Product-price" #"span,data-price-product-obj,"
@@ -26,6 +29,7 @@ alltricks.fr:
   marque: "strong,class,alltricks-Product-brandLabel"
   variations: "p,class,alltricks-ChildSelector-customOptionLabel" #"div,class,alltricks-ChildSelector-customOptions-group"
   number_articles: "" #"div,class,alltricks-ProductListingHeader__item--left"
+  number_pages: ""
 cyclable.com:
   name_tree: "li,class,category" #"ul,id,product_list"
   price: "span,class,price"
@@ -34,6 +38,7 @@ cyclable.com:
   marque: "span,itemprop,name"
   variations: ""
   number_articles: ""
+  number_pages: "div,id,pagination_bottom,li,span"
   #<meta itemprop="productID" content="14889">
 fr.aliexpress.com:
   name_tree: "script,type,text/javascript"
