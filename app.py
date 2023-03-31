@@ -24,8 +24,6 @@ ELASTIC_NODES = configyml["elastic"]["nodes"]
 if not configyml["elastic"]["apiid"]:
     es = Elasticsearch(ELASTIC_NODES)
 
-#elasticindex = configyml["elastic"]["index"]
-
 def addtoelastic(matox):
     elasticindexMonth = configyml["elastic"]["index"] + "-" + datetime.now().strftime("%Y.%m")
     for key,mato in matox.items():
@@ -106,9 +104,11 @@ if args.storeelastic and matox:
 if args.send:
 
     content=""
+    elasticindex = configyml["elastic"]["index"] + "*"
+    maxmatox = 10000
 
     ## Requête elastic pour récupérer une liste de matériel
-    resp = es.search(index=elasticindex, sort={ "@timestamp": { "order": "desc"} },size=1500)
+    resp = es.search(index=elasticindex, sort={ "@timestamp": { "order": "desc"} },size=maxmatox)
     matoxlist = list()
     for mato in resp["hits"]["hits"]:
         matoxdict = dict()
@@ -125,7 +125,6 @@ if args.send:
 
     for mato in matoxlist:        
         ## Requête elastic par matériel
-        elasticindex = elasticindex + "*"
         if "modelId" in mato:
             resp = es.search(index=elasticindex, query={ "bool": { "must": [ { "match_phrase": { "fullname": mato["fullname"] }},{"term": { "name_site": mato["name_site"]}},{"term": { "modelId": mato["modelId"] }}] } },sort={ "@timestamp": { "order": "desc"} },size=2)
         else:
