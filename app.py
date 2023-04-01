@@ -36,14 +36,20 @@ def searchelastic(matox):
     newmatox = dict()
     for key,mato in matox.items():
         if "modelId" in mato:
-            resp = es.search(index=elasticindex, query={ "bool": { "must": [ { "match_phrase": { "fullname": mato["fullname"] }},{"term": { "name_site": mato["name_site"]}},{"term": { "modelId": mato["modelId"] }}] } },sort={ "@timestamp": { "order": "desc"} },size=1)
+            resp = es.search(index=elasticindex, query={ "bool": { "must": [ { "match_phrase": { "fullname": mato["fullname"] }},{"term": { "name_site": mato["name_site"]}},{"term": { "modelId": mato["modelId"] }}] } },sort={ "@timestamp": { "order": "desc"} },size=2)
         else:
-            resp = es.search(index=elasticindex, query={ "bool": { "must": [ { "match_phrase": { "fullname": mato["fullname"] }},{"term": { "name_site": mato["name_site"]}}] } },sort={ "@timestamp": { "order": "desc"} },size=1)
+            resp = es.search(index=elasticindex, query={ "bool": { "must": [ { "match_phrase": { "fullname": mato["fullname"] }},{"term": { "name_site": mato["name_site"]}}] } },sort={ "@timestamp": { "order": "desc"} },size=2)
 
         if len(resp["hits"]["hits"]) >= 1:
             NewPrice = mato["prix"]
             ActualPrice = resp["hits"]["hits"][0]["_source"]["prix"]
             if NewPrice != ActualPrice:
+                newmatox[key] = mato
+            elif len(resp["hits"]["hits"]) >= 2:
+                OlderPrice = resp["hits"]["hits"][1]["_source"]["prix"]
+                if ActualPrice != OlderPrice:
+                    newmatox[key] = mato
+            else:
                 newmatox[key] = mato
         else:
             newmatox[key] = mato
