@@ -113,6 +113,8 @@ if args.send:
     elasticindex = configyml["elastic"]["index"] + "*"
     maxmatox = 10000
 
+    logging.info("Search elastic to find new price")
+
     ## Requête elastic pour récupérer une liste de matériel
     resp = es.search(index=elasticindex, sort={ "@timestamp": { "order": "desc"} },size=maxmatox)
     matoxlist = list()
@@ -126,8 +128,11 @@ if args.send:
             matoxdict["url"] = mato["_source"]["url"]
         matoxlist.append(matoxdict)
 
+    logging.debug("Len matox : " + str(len(matoxlist)))
     # Avoid duplicate
     matoxlist = [x for n, x in enumerate(matoxlist) if x not in matoxlist[:n]]
+    ##
+    logging.debug("Len matox whithout duplicate : " + str(len(matoxlist)))
 
     for mato in matoxlist:        
         ## Requête elastic par matériel
@@ -139,10 +144,11 @@ if args.send:
             continue
         NewPrice = resp["hits"]["hits"][0]["_source"]["prix"]
         ActualPrice = resp["hits"]["hits"][1]["_source"]["prix"]
-        logging.debug( "Mato : " + PrintableMato(mato) + " ## " + str(ActualPrice) + " -> " + str(NewPrice) )
+        #logging.debug( "Mato : " + PrintableMato(mato) + " ## " + str(ActualPrice) + " -> " + str(NewPrice) )
         if NewPrice != ActualPrice:
             content = content + PrintableMato(mato) + " ## " + str(ActualPrice) + " -> " + str(NewPrice) + "\r\n"
 
+    logging.info( "Found " + str(len(content.split("##"))-1) + " new price")
 
     if args.send == "masto":
         from mastodon import Mastodon
@@ -159,17 +165,30 @@ if args.send:
             to_file = 'pytooter_usercred.secret'
         )
 
+        logging.debug("Content = " + str(content))
+
         if len(content) != 0:
             limitmasto = 500
+            actualtootnumber = 1 
             if len(content) >= limitmasto:
                 newcontent = ""
                 for cont in content.split("\r\n"):
                     if len(newcontent) + len(cont) < limitmasto:
                         newcontent += cont + "\r\n"
                     else:
+                        logging.info( "Send Masto toot number : " + str(actualtootnumber))
+                        logging.debug( "newcontent = " + newcontent )
                         mastodon.status_post(newcontent) #, spoiler_text=subject)
                         newcontent = ""
+                        actualtootnumber = actualtootnumber + 1
+                if newcontent != "":
+                    logging.info( "Send Masto toot number : " + str(actualtootnumber))
+                    logging.debug( "newcontent = " + newcontent )
+                    mastodon.status_post(newcontent) #, spoiler_text=subject)
+                    newcontent = ""
+                    actualtootnumber = actualtootnumber + 1
             else:
+                logging.info( "Send single Masto toot")
                 mastodon.status_post(content) #, spoiler_text=subject)
 
     if args.send == "mail":
