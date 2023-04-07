@@ -13,6 +13,10 @@ masto:
   api_base_url: https://piaille.org
   login: xxx@xxx.com
   password: yyyy
+discord:
+  vtt: <web hook url>
+  cargo: <web hook url>
+  default: <web hook url>
 level: DEBUG
 tosurvey:
   #aliexpress-minipc: https://fr.aliexpress.com/af/mini-pc.html?trafficChannel=af&SearchText=mini+pc&ltype=affiliate&SortType=default&page=1&CatId=0

@@ -66,6 +66,15 @@ def PrintableMato(mato):
         PrintableMato +=  " / " + str(mato["name_site"]) 
     return PrintableMato
 
+def PrintableMatoDiscord(mato):
+    PrintableMato = str(mato["fullname"])
+    if "url" in mato:
+        PrintableMato += " / " + mato["url"]
+    else:
+        PrintableMato +=  " / " + str(mato["name_site"])
+    PrintableMato +=  " ## " + mato["prix"]  + " -> " + mato["newprix"]
+    return PrintableMato
+
 def fetchwebsite():
     matoxx = dict()
     for name_search,URL in configyml["tosurvey"].items():
@@ -111,7 +120,7 @@ if args.send:
 
     content=""
     elasticindex = configyml["elastic"]["index"] + "*"
-    maxmatox = 10000
+    maxmatox = 1000 #10000
 
     logging.info("Search elastic to find new price")
 
@@ -134,6 +143,8 @@ if args.send:
     ##
     logging.debug("Len matox whithout duplicate : " + str(len(matoxlist)))
 
+    newmatoxlist = list()
+
     for mato in matoxlist:        
         ## Requête elastic par matériel
         if "modelId" in mato:
@@ -147,6 +158,10 @@ if args.send:
         #logging.debug( "Mato : " + PrintableMato(mato) + " ## " + str(ActualPrice) + " -> " + str(NewPrice) )
         if NewPrice != ActualPrice:
             content = content + PrintableMato(mato) + " ## " + str(ActualPrice) + " -> " + str(NewPrice) + "\r\n"
+            ### Create new list
+            tempdict = resp["hits"]["hits"][1]["_source"]
+            tempdict['newprix'] = resp["hits"]["hits"][0]["_source"]["prix"]
+            newmatoxlist.append(tempdict)
 
     logging.info( "Found " + str(len(content.split("##"))-1) + " new price")
 
@@ -218,5 +233,22 @@ if args.send:
 
             except Exception as exc:
                 logging.error(exc)
+
+    if args.send == "discord":
+        from discord_webhook import DiscordWebhook
+        import time
+        Found = False
+        for newmatox in newmatoxlist:
+            for kind in configyml["discord"]:
+                if kind in newmatox["name_search"]:
+                    Found = True
+                    webhook = DiscordWebhook(url=configyml["discord"][kind], content=PrintableMatoDiscord(newmatox))
+                    response = webhook.execute()
+                    time.sleep(0.4)
+            if not Found:
+                kind = "default"
+                webhook = DiscordWebhook(url=configyml["discord"][kind], content=PrintableMatoDiscord(newmatox))
+                response = webhook.execute()
+                time.sleep(0.4)
 
 logging.info("################ Script end #################################")
