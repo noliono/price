@@ -72,7 +72,7 @@ def PrintableMatoDiscord(mato):
         PrintableMato += " / " + mato["url"]
     else:
         PrintableMato +=  " / " + str(mato["name_site"])
-    PrintableMato +=  " ## " + mato["prix"]  + " -> " + mato["newprix"]
+    PrintableMato +=  " ## " + str(mato["prix"])  + " -> " + str(mato["newprix"])
     return PrintableMato
 
 def fetchwebsite():
@@ -148,9 +148,9 @@ if args.send:
     for mato in matoxlist:        
         ## Requête elastic par matériel
         if "modelId" in mato:
-            resp = es.search(index=elasticindex, query={ "bool": { "must": [ { "match_phrase": { "fullname": mato["fullname"] }},{"term": { "name_site": mato["name_site"]}},{"term": { "modelId": mato["modelId"] }}] } },sort={ "@timestamp": { "order": "desc"} },size=2)
+            resp = es.search(index=elasticindex, query={ "bool": { "must": [ { "match_phrase": { "fullname": mato["fullname"] }},{"term": { "name_site": mato["name_site"]}},{"term": { "modelId": mato["modelId"] }}] } },sort={ "@timestamp": { "order": "desc"} },size=6)
         else:
-            resp = es.search(index=elasticindex, query={ "bool": { "must": [ { "match_phrase": { "fullname": mato["fullname"] }},{"term": { "name_site": mato["name_site"]}}] } },sort={ "@timestamp": { "order": "desc"} },size=2)
+            resp = es.search(index=elasticindex, query={ "bool": { "must": [ { "match_phrase": { "fullname": mato["fullname"] }},{"term": { "name_site": mato["name_site"]}}] } },sort={ "@timestamp": { "order": "desc"} },size=6)
         if len(resp["hits"]["hits"]) <= 1:
             continue
         NewPrice = resp["hits"]["hits"][0]["_source"]["prix"]
@@ -159,8 +159,13 @@ if args.send:
         if NewPrice != ActualPrice:
             content = content + PrintableMato(mato) + " ## " + str(ActualPrice) + " -> " + str(NewPrice) + "\r\n"
             ### Create new list
-            tempdict = resp["hits"]["hits"][1]["_source"]
-            tempdict['newprix'] = resp["hits"]["hits"][0]["_source"]["prix"]
+            tempdict = resp["hits"]["hits"][0]["_source"]
+            tempdict["histoprix"] = list()
+            pricee = ActualPrice
+            for doc in resp["hits"]["hits"]:
+                if pricee != doc["_source"]["prix"]:
+                    tempdict["histoprix"].append( { "timestamp": doc["_source"]["@timestamp"] , "prix": doc["_source"]["prix"] } )
+                    pricee = doc["_source"]["prix"]
             newmatoxlist.append(tempdict)
 
     logging.info( "Found " + str(len(content.split("##"))-1) + " new price")
@@ -235,20 +240,46 @@ if args.send:
                 logging.error(exc)
 
     if args.send == "discord":
-        from discord_webhook import DiscordWebhook
+        #from discord_webhook import DiscordWebhook
+        from discord_webhook import DiscordWebhook, DiscordEmbed
         import time
         Found = False
         for newmatox in newmatoxlist:
+            Found = False
             for kind in configyml["discord"]:
                 if kind in newmatox["name_search"]:
                     Found = True
-                    webhook = DiscordWebhook(url=configyml["discord"][kind], content=PrintableMatoDiscord(newmatox))
+                    ## Pour envoi sur canal test
+                    #configyml["discord"][kind] = "https://discordapp.com/api/webhooks/1093862613869404310/nCxY36jJCzzltRxp1w9WHQW1CW3bVEGZabEmXCtst2aHkHHAlOnMacjQLN5TB9g1VNWq"
+                    ##
+                    embed = DiscordEmbed(title=newmatox["fullname"],color="0fbff8",url=newmatox["url"])
+                    #if thumb: embed.set_thumbnail(url = thumb)
+                    embed.set_timestamp()
+                    for histo in newmatox["histoprix"]:
+                        date_time = datetime.strptime(histo["timestamp"], '%Y-%m-%dT%H:%M:%S.%f')
+                        d = date_time.strftime("%d/%m/%Y, %H:%M")
+                        embed.add_embed_field(name=d, value=str(histo["prix"]) +"€", inline=True)
+                    embed.add_embed_field(name='Recherche', value=newmatox["name_search"], inline=False)
+                    webhook = DiscordWebhook(url=configyml["discord"][kind])
+                    webhook.add_embed(embed)
                     response = webhook.execute()
-                    time.sleep(0.4)
+                    time.sleep(0.2)
             if not Found:
                 kind = "default"
-                webhook = DiscordWebhook(url=configyml["discord"][kind], content=PrintableMatoDiscord(newmatox))
+                ## Pour envoi sur canal test
+                #configyml["discord"][kind] = "https://discordapp.com/api/webhooks/1093862613869404310/nCxY36jJCzzltRxp1w9WHQW1CW3bVEGZabEmXCtst2aHkHHAlOnMacjQLN5TB9g1VNWq"
+                ##
+                embed = DiscordEmbed(title=newmatox["fullname"],color="0fbff8",url=newmatox["url"])
+                #if thumb: embed.set_thumbnail(url = thumb)
+                embed.set_timestamp()
+                for histo in newmatox["histoprix"]:
+                    date_time = datetime.strptime(histo["timestamp"], '%Y-%m-%dT%H:%M:%S.%f')
+                    d = date_time.strftime("%d/%m/%Y, %H:%M")
+                    embed.add_embed_field(name=d, value=str(histo["prix"]) +"€", inline=True)
+                embed.add_embed_field(name='Recherche', value=newmatox["name_search"], inline=False)
+                webhook = DiscordWebhook(url=configyml["discord"][kind])
+                webhook.add_embed(embed)
                 response = webhook.execute()
-                time.sleep(0.4)
+                time.sleep(0.2)
 
 logging.info("################ Script end #################################")
