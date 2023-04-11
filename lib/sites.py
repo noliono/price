@@ -91,61 +91,63 @@ class sites():
     def decathlon(self,name_search):
         matox = dict()
 
-        datas = json.loads(self.products[0].contents[0])["_ctx"]["data"]
-        #print(json.dumps(json.loads(self.products[0].contents[0])))
-        #print(json.dumps(datas))
-        #print(json.dumps(datas[5]["data"]["blocks"]["items"]))
-        #exit()
-        items = datas[5]["data"]["blocks"]["items"]
-        #print(items)
-
-        while len(items) != 0 :
-
-            #print(self.URL)            
-            
-            #print(json.dumps(items))
-            for kk in items:
-                marque = kk["brand"]["label"]
-                supermodelId = kk["supermodelId"]
-                for kkk in kk["models"]:
-                    name = kkk["webLabel"]
-                    prix = kkk["price"]
-                    variations = kkk["availableSizes"]
-                    url = "https://" + self.name_site + "/" + kkk["url"]
-                    matox[marque + " " + name + "-" + supermodelId] = {"marque":marque.lower(), "name":name.lower(), "prix":prix, "variations":variations, "name_search":name_search, "name_site":self.name_site, "fullname":marque.lower() + " " + name.lower(), "modelId":supermodelId, "url":url}
-
-            pattern = re.compile(r"from=(\d+)&size=(\d+)")
-            newstart = int(pattern.search(self.URL).group(1)) + int(pattern.search(self.URL).group(2))
-            self.URL = re.sub(r"from=\d+", "from=" + str(newstart), self.URL)
-            logging.info("URL=" + str(self.URL))
-            self.response = requests.get(self.URL, headers=self.headers)
-            self.soup = bs4.BeautifulSoup(self.response.text, "html.parser")
-            self.products = self.soup.find_all(self.name_tree_tag[0], attrs={self.name_tree_tag[1]:self.name_tree_tag[2]})            
-        
-            items = list()
-
+        if len(self.products) != 0:
             datas = json.loads(self.products[0].contents[0])["_ctx"]["data"]
+            #print(json.dumps(json.loads(self.products[0].contents[0])))
+            #print(json.dumps(datas))
+            #print(json.dumps(datas[5]["data"]["blocks"]["items"]))
+            #exit()
             items = datas[5]["data"]["blocks"]["items"]
-            
-            #print(items)
-        #print(matox)
-        #exit()
 
+            while len(items) != 0 and len(self.products[0].contents) != 0:
 
-        '''
-        jsonresult = json.loads(self.products[0].contents[0])
-        for key in jsonresult["_ctx"]["data"]:
-            if "Super" in key["id"]:
-                for kk in key["data"]["blocks"]["items"]:
+                #print(self.URL)            
+                
+                #print(json.dumps(items))
+                for kk in items:
                     marque = kk["brand"]["label"]
-                    supermodelId = kk["supermodelId"]
+                    #supermodelId = kk["supermodelId"]
+                    supermodelId = kk["models"][0]["modelId"]
                     for kkk in kk["models"]:
                         name = kkk["webLabel"]
                         prix = kkk["price"]
                         variations = kkk["availableSizes"]
                         url = "https://" + self.name_site + "/" + kkk["url"]
                         matox[marque + " " + name + "-" + supermodelId] = {"marque":marque.lower(), "name":name.lower(), "prix":prix, "variations":variations, "name_search":name_search, "name_site":self.name_site, "fullname":marque.lower() + " " + name.lower(), "modelId":supermodelId, "url":url}
-        '''
+
+                pattern = re.compile(r"from=(\d+)&size=(\d+)")
+                newstart = int(pattern.search(self.URL).group(1)) + int(pattern.search(self.URL).group(2))
+                self.URL = re.sub(r"from=\d+", "from=" + str(newstart), self.URL)
+                logging.info("URL=" + str(self.URL))
+                self.response = requests.get(self.URL, headers=self.headers)
+                self.soup = bs4.BeautifulSoup(self.response.text, "html.parser")
+                self.products = self.soup.find_all(self.name_tree_tag[0], attrs={self.name_tree_tag[1]:self.name_tree_tag[2]})            
+            
+                items = list()
+
+                #print(len(self.products))
+                #print(len(self.products))
+                if len(self.products) != 0:
+                    datas = json.loads(self.products[0].contents[0])["_ctx"]["data"]
+                    items = datas[5]["data"]["blocks"]["items"]
+                
+                #print(items)
+
+
+            '''
+            jsonresult = json.loads(self.products[0].contents[0])
+            for key in jsonresult["_ctx"]["data"]:
+                if "Super" in key["id"]:
+                    for kk in key["data"]["blocks"]["items"]:
+                        marque = kk["brand"]["label"]
+                        supermodelId = kk["supermodelId"]
+                        for kkk in kk["models"]:
+                            name = kkk["webLabel"]
+                            prix = kkk["price"]
+                            variations = kkk["availableSizes"]
+                            url = "https://" + self.name_site + "/" + kkk["url"]
+                            matox[marque + " " + name + "-" + supermodelId] = {"marque":marque.lower(), "name":name.lower(), "prix":prix, "variations":variations, "name_search":name_search, "name_site":self.name_site, "fullname":marque.lower() + " " + name.lower(), "modelId":supermodelId, "url":url}
+            '''
         return matox
 
 
