@@ -124,8 +124,8 @@ if args.send:
 
     logging.info("Search elastic to find new price")
 
-    ## Requête elastic pour récupérer une liste de matériel
-    resp = es.search(index=elasticindex, sort={ "@timestamp": { "order": "desc"} },size=maxmatox)
+    ## Requête elastic pour récupérer une liste de matériel et limite sur les 3 dernières heures pour éviter les produits sans nouveau prix alors que le dernier prix enregistré avait changé
+    resp = es.search(index=elasticindex, query={ "bool": { "must": [ {"range": { "@timestamp": { "gte": "now-3h/h"}}}]}}, sort={ "@timestamp": { "order": "desc"} },size=maxmatox)
     matoxlist = list()
     for mato in resp["hits"]["hits"]:
         matoxdict = dict()
@@ -242,7 +242,7 @@ if args.send:
     if args.send == "discord":
         #from discord_webhook import DiscordWebhook
         from discord_webhook import DiscordWebhook, DiscordEmbed
-        import time
+        import time, pytz
         Found = False
         for newmatox in newmatoxlist:
             Found = False
@@ -257,7 +257,8 @@ if args.send:
                     embed.set_timestamp()
                     for histo in newmatox["histoprix"]:
                         date_time = datetime.strptime(histo["timestamp"], '%Y-%m-%dT%H:%M:%S.%f')
-                        d = date_time.strftime("%d/%m/%Y, %H:%M")
+                        d = date_time.replace(tzinfo=pytz.UTC).astimezone(pytz.timezone('Europe/Paris')).strftime('%d-%m-%Y %H:%M') #:%S %Z%z')
+                        #d = date_time.strftime("%d/%m/%Y, %H:%M")
                         embed.add_embed_field(name=d, value=str(histo["prix"]) +"€", inline=True)
                     embed.add_embed_field(name='Recherche', value=newmatox["name_search"], inline=False)
                     webhook = DiscordWebhook(url=configyml["discord"][kind])
@@ -274,7 +275,8 @@ if args.send:
                 embed.set_timestamp()
                 for histo in newmatox["histoprix"]:
                     date_time = datetime.strptime(histo["timestamp"], '%Y-%m-%dT%H:%M:%S.%f')
-                    d = date_time.strftime("%d/%m/%Y, %H:%M")
+                    d = date_time.replace(tzinfo=pytz.UTC).astimezone(pytz.timezone('Europe/Paris')).strftime('%d-%m-%Y %H:%M') #:%S %Z%z')
+                    #d = date_time.strftime("%d/%m/%Y, %H:%M")
                     embed.add_embed_field(name=d, value=str(histo["prix"]) +"€", inline=True)
                 embed.add_embed_field(name='Recherche', value=newmatox["name_search"], inline=False)
                 webhook = DiscordWebhook(url=configyml["discord"][kind])
