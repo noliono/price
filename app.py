@@ -8,7 +8,7 @@ import json
 import logging
 from lib import sites
 import argparse
-
+import json
 
 
 logging.info("################ Script start #################################")
@@ -156,7 +156,7 @@ if args.send:
         NewPrice = resp["hits"]["hits"][0]["_source"]["prix"]
         ActualPrice = resp["hits"]["hits"][1]["_source"]["prix"]
         #logging.debug( "Mato : " + PrintableMato(mato) + " ## " + str(ActualPrice) + " -> " + str(NewPrice) )
-        if NewPrice != ActualPrice:
+        if NewPrice < ActualPrice:
             content = content + PrintableMato(mato) + " ## " + str(ActualPrice) + " -> " + str(NewPrice) + "\r\n"
             ### Create new list
             tempdict = resp["hits"]["hits"][0]["_source"]
@@ -169,6 +169,7 @@ if args.send:
             newmatoxlist.append(tempdict)
 
     logging.info( "Found " + str(len(content.split("##"))-1) + " new price")
+
 
     if args.send == "masto":
         from mastodon import Mastodon
