@@ -156,7 +156,7 @@ if args.send:
         NewPrice = resp["hits"]["hits"][0]["_source"]["prix"]
         ActualPrice = resp["hits"]["hits"][1]["_source"]["prix"]
         #logging.debug( "Mato : " + PrintableMato(mato) + " ## " + str(ActualPrice) + " -> " + str(NewPrice) )
-        if NewPrice < ActualPrice:
+        if NewPrice < ActualPrice and ( resp["hits"]["hits"][0]["_source"]["variations"] or "cyclable" in resp["hits"]["hits"][0]["_source"]["name_site"]):
             content = content + PrintableMato(mato) + " ## " + str(ActualPrice) + " -> " + str(NewPrice) + "\r\n"
             ### Create new list
             tempdict = resp["hits"]["hits"][0]["_source"]
@@ -265,7 +265,7 @@ if args.send:
                     webhook = DiscordWebhook(url=configyml["discord"][kind])
                     webhook.add_embed(embed)
                     response = webhook.execute()
-                    time.sleep(0.2)
+                    time.sleep(1)
             if not Found:
                 kind = "default"
                 ## Pour envoi sur canal test
@@ -283,6 +283,6 @@ if args.send:
                 webhook = DiscordWebhook(url=configyml["discord"][kind])
                 webhook.add_embed(embed)
                 response = webhook.execute()
-                time.sleep(0.2)
+                time.sleep(1)
 
 logging.info("################ Script end #################################")
