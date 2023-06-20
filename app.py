@@ -284,8 +284,8 @@ if args.send:
                 webhook.add_embed(embed)
                 response = webhook.execute()
                 time.sleep(1)
-            urllog = "https://discordapp.com/api/webhooks/1093862613869404310/nCxY36jJCzzltRxp1w9WHQW1CW3bVEGZabEmXCtst2aHkHHAlOnMacjQLN5TB9g1VNWq"
-            webhook = DiscordWebhook(url=urllog, content="Found " + str(len(content.split("##"))-1) + " new price")
-            response = webhook.execute()
+        urllog = "https://discordapp.com/api/webhooks/1093862613869404310/nCxY36jJCzzltRxp1w9WHQW1CW3bVEGZabEmXCtst2aHkHHAlOnMacjQLN5TB9g1VNWq"
+        webhook = DiscordWebhook(url=urllog, content="Found " + str(len(content.split("##"))-1) + " new price")
+        response = webhook.execute()
 
 logging.info("################ Script end #################################")
