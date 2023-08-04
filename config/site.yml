@@ -40,6 +40,24 @@ cyclable.com:
   number_articles: ""
   number_pages: "div,id,pagination_bottom,li,span"
   #<meta itemprop="productID" content="14889">
+culturevelo.com:
+  name_tree: "article,class,dalle" #"div,id,LISTE"
+  price: "div,class,dalle-prix"
+  price_sale: ""
+  name: "h4"
+  marque: "h3"
+  variations: "span,class,dispo"
+  number_articles: "" #"div,class,count"
+  number_pages: "" #381/27=14,11 => 15 ?
+intersport.fr:
+  name_tree: "div,class,product-grid__card"
+  price: "span,class,product-card__price"
+  price_sale: "span,class,product-card__price--alert"
+  name: "a,class,product-url"
+  marque: "div,class,product-card__infos"
+  variations: ""
+  number_articles: ""
+  number_pages: "" 
 fr.aliexpress.com:
   name_tree: "script,type,text/javascript"
   #name_tree: "a,class,31q8B _2f4Ho"
