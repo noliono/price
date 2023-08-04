@@ -92,6 +92,7 @@ def fetchwebsite():
             matox = sites.sites(URL,name_site).generic(name_search)
         logging.debug(matox)
         matoxx.update(matox)
+    print(str(matoxx))
     return matoxx
 
 parser = argparse.ArgumentParser()
@@ -153,8 +154,8 @@ if args.send:
             resp = es.search(index=elasticindex, query={ "bool": { "must": [ { "match_phrase": { "fullname": mato["fullname"] }},{"term": { "name_site": mato["name_site"]}}] } },sort={ "@timestamp": { "order": "desc"} },size=6)
         if len(resp["hits"]["hits"]) <= 1:
             continue
-        NewPrice = resp["hits"]["hits"][0]["_source"]["prix"]
-        ActualPrice = resp["hits"]["hits"][1]["_source"]["prix"]
+        NewPrice = float( resp["hits"]["hits"][0]["_source"]["prix"] )
+        ActualPrice = float( resp["hits"]["hits"][1]["_source"]["prix"] )
         #logging.debug( "Mato : " + PrintableMato(mato) + " ## " + str(ActualPrice) + " -> " + str(NewPrice) )
         if NewPrice < ActualPrice and ( resp["hits"]["hits"][0]["_source"]["variations"] or "cyclable" in resp["hits"]["hits"][0]["_source"]["name_site"]):
             content = content + PrintableMato(mato) + " ## " + str(ActualPrice) + " -> " + str(NewPrice) + "\r\n"
