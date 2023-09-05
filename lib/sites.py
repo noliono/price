@@ -207,7 +207,10 @@ class sites():
         if self.siteyml[self.name_site]["number_articles"]:
             number_articles = self.siteyml[self.name_site]["number_articles"].split(',')
             if self.name_site == "probikeshop.fr":
-                number_articles = int(self.soup.find(number_articles[0], attrs={number_articles[1]:number_articles[2]})["value"])
+               if not self.soup.find(number_articles[0], attrs={number_articles[1]:number_articles[2]}) is None:
+                    number_articles = int(self.soup.find(number_articles[0], attrs={number_articles[1]:number_articles[2]})["value"])
+                else:
+                    return None
             else:
                 number_articles = int(self.trim_the_ends(self.soup.find(number_articles[0], attrs={number_articles[1]:number_articles[2]}).contents[0].replace("Articles","")).replace(".",""))
         else:

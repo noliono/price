@@ -91,8 +91,7 @@ def fetchwebsite():
         else:
             matox = sites.sites(URL,name_site).generic(name_search)
         logging.debug(matox)
-        matoxx.update(matox)
-    print(str(matoxx))
+        if matox: matoxx.update(matox)
     return matoxx
 
 parser = argparse.ArgumentParser()
