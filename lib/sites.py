@@ -244,7 +244,8 @@ class sites():
             if not self.products:
                 logging.error("Error: No products found !")
                 logging.debug(self.response.text)
-                continue #exit()
+                #continue #exit()
+                break
 
             if i == 1 and self.name_site == "culturevelo.com":
                 import re
