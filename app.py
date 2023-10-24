@@ -156,7 +156,8 @@ if args.send:
         NewPrice = float( resp["hits"]["hits"][0]["_source"]["prix"] )
         ActualPrice = float( resp["hits"]["hits"][1]["_source"]["prix"] )
         #logging.debug( "Mato : " + PrintableMato(mato) + " ## " + str(ActualPrice) + " -> " + str(NewPrice) )
-        if NewPrice < ActualPrice and ( resp["hits"]["hits"][0]["_source"]["variations"] or "cyclable" in resp["hits"]["hits"][0]["_source"]["name_site"]):
+        Pourcentage = 10 #% de réduction
+        if NewPrice <= ActualPrice * ( 1 - Pourcentage / 100 ) and ( resp["hits"]["hits"][0]["_source"]["variations"] or "cyclable" in resp["hits"]["hits"][0]["_source"]["name_site"]):
             content = content + PrintableMato(mato) + " ## " + str(ActualPrice) + " -> " + str(NewPrice) + "\r\n"
             ### Create new list
             tempdict = resp["hits"]["hits"][0]["_source"]
