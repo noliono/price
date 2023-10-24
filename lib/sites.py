@@ -58,8 +58,7 @@ class sites():
         self.URL = URL
         with open('config/site.yml', 'r') as file:
             self.siteyml = yaml.safe_load(file)
-        self.response = requests.get(URL, headers=self.headers)
-        #print(self.response.text)
+        self.response = requests.get(URL, headers=self.headers) #, allow_redirects=True)
         self.soup = bs4.BeautifulSoup(self.response.text, "html.parser")
         self.name_tree_tag = self.siteyml[name_site]["name_tree"].split(',')
         self.products = self.soup.find_all(self.name_tree_tag[0], attrs={self.name_tree_tag[1]:self.name_tree_tag[2]})
@@ -92,7 +91,7 @@ class sites():
         matox = dict()
 
         if len(self.products) != 0:
-            datas = json.loads(self.products[0].contents[0])["_ctx"]["data"]
+            datas = json.loads(self.products[0].contents[0].replace("__DKT = ",""))["_ctx"]["data"]
             #print(json.dumps(json.loads(self.products[0].contents[0])))
             #print(json.dumps(datas))
             #print(json.dumps(datas[5]["data"]["blocks"]["items"]))
@@ -106,9 +105,9 @@ class sites():
                 #print(json.dumps(items))
                 for kk in items:
                     marque = kk["brand"]["label"]
-                    #supermodelId = kk["supermodelId"]
-                    supermodelId = kk["models"][0]["modelId"]
+                    #supermodelId = kk["models"][0]["modelId"]
                     for kkk in kk["models"]:
+                        supermodelId = kkk["modelId"]
                         name = kkk["webLabel"]
                         prix = kkk["price"]
                         variations = kkk["availableSizes"]
@@ -128,7 +127,8 @@ class sites():
                 #print(len(self.products))
                 #print(len(self.products))
                 if len(self.products) != 0:
-                    datas = json.loads(self.products[0].contents[0])["_ctx"]["data"]
+                    #datas = json.loads(self.products[0].contents[0])["_ctx"]["data"]
+                    datas = json.loads(self.products[0].contents[0].replace("__DKT = ",""))["_ctx"]["data"]
                     items = datas[5]["data"]["blocks"]["items"]
                 
                 #print(items)
@@ -207,7 +207,10 @@ class sites():
         if self.siteyml[self.name_site]["number_articles"]:
             number_articles = self.siteyml[self.name_site]["number_articles"].split(',')
             if self.name_site == "probikeshop.fr":
-                number_articles = int(self.soup.find(number_articles[0], attrs={number_articles[1]:number_articles[2]})["value"])
+                if not self.soup.find(number_articles[0], attrs={number_articles[1]:number_articles[2]}) is None:
+                    number_articles = int(self.soup.find(number_articles[0], attrs={number_articles[1]:number_articles[2]})["value"])
+                else:
+                    return None
             else:
                 number_articles = int(self.trim_the_ends(self.soup.find(number_articles[0], attrs={number_articles[1]:number_articles[2]}).contents[0].replace("Articles","")).replace(".",""))
         else:
@@ -241,13 +244,29 @@ class sites():
             if not self.products:
                 logging.error("Error: No products found !")
                 logging.debug(self.response.text)
-                continue #exit()
+                #continue #exit()
+                break
 
-            TypesInName = ['Vélo de Randonnée', 'Velo de Voyage / Velotaf','Vélo de Voyage','Vélo de Route Électrique', 'Vélo de Ville', 'vélo de ville', 
-            'vtc électrique', 'vélo de course électrique', 'vélo de gravel', 'vélo de course', 'vtt électrique', 'vtt enfant', 'vtt trail/enduro', 'cross country', 'vtt trail/randonnée','vtt trail','vtc électrique', 'vtc enfant','vtc','vtt']
+            if i == 1 and self.name_site == "culturevelo.com":
+                import re
+                myproducts = self.soup.find_all()
+                #print(str(myproducts))
+                m = re.search( r"""document\.getElementById\("MAXPAGES"\)\.value \= \"([0-9]*)\"""", str(myproducts) )
+                # document.getElementById("MAXPAGES").value = "14";
+                if m and m.group(1):
+                    number_pages = int(m.group(1))
+                
+                #print(number_pages)
+                #exit()
+
+            TypesInName = ['Vélo de Randonnée', 'vélo ville', 'Velo de Voyage / Velotaf','Vélo de Voyage','Vélo de Route Électrique', 'Vélo de Ville', 'vélo de ville', 
+            'vtc électrique', 'vélo de course électrique', 'vélo de gravel', 'vélo de course', 'vtt électrique', 'vtt enfant', 'vtt trail/enduro', 'cross country', 'vtt trail/randonnée','vtt trail',
+            'vtc électrique', 'vtc enfant','vtc','vtt']
 
             for product in self.products:
                 logging.debug("product = " + str(product))
+                if self.name_site == "culturevelo.com" and "dalleconseil" in str(product):
+                    continue
                 if len(marque_tag) > 1:
                     marque = self.trim_the_ends( product.find(marque_tag[0], attrs={marque_tag[1]:marque_tag[2]}) )
                     if self.name_site == "probikeshop.fr" or self.name_site == "alltricks.fr" and marque:
@@ -256,10 +275,18 @@ class sites():
                     elif self.name_site == "bikester.fr" or self.name_site == "cyclable.com" and marque:
                         marque = self.trim_the_ends( product.find(marque_tag[0], attrs={marque_tag[1]:marque_tag[2]}).contents[0] )
                 else:
-                    marque = "Inconnu" #Cas probikeshop
-                if product.find(name_tag[0], attrs={name_tag[1]:name_tag[2]}) is None:
-                    return matox
-                name = self.trim_the_ends( product.find(name_tag[0], attrs={name_tag[1]:name_tag[2]}).contents[0] )
+                    if self.name_site == "culturevelo.com":
+                        marque = self.trim_the_ends( product.find(marque_tag[0]).contents[0] )
+                    else:
+                        marque = "Inconnu" #Cas probikeshop
+
+                if self.name_site == "culturevelo.com":
+                    name = self.trim_the_ends( product.find(name_tag[0]).contents[0] )
+                else:
+                    if len(name_tag) > 1 and product.find(name_tag[0], attrs={name_tag[1]:name_tag[2]}) is None:
+                        return matox
+                    name = self.trim_the_ends( product.find(name_tag[0], attrs={name_tag[1]:name_tag[2]}).contents[0] )
+
                 for TypeInName in TypesInName:
                     if name:
                         name = name.lower().replace(TypeInName.lower() + " - ","")
@@ -277,6 +304,7 @@ class sites():
                 if marque and name:
                     name = name.replace(marque + " ","")
                 prix = product.find(price_tag[0], attrs={price_tag[1]:price_tag[2]})
+                logging.debug(prix)
                 if self.name_site == "alltricks.fr":
                     prix = self.trim_the_ends( prix.contents[len(prix)-1].contents[0]).encode('ascii','ignore').decode()
                 else:
@@ -298,6 +326,7 @@ class sites():
                     prix = prix.replace(",",".")
                     #prix = prix.replace("À partir de\n","")
                     prix = prix.replace("Àpartirde\n","")
+                    prix = prix.replace("partirde\n","")
                 if prix == "N/A":
                     prix = ""
                 if self.name_site == "bikester.fr":
@@ -319,7 +348,7 @@ class sites():
                         variations = self.remove_blank_list( self.trim_the_ends(variations.contents[0]).split(",") )
                 #if variations != "":
                 #    matox[marque + " " + name] = {"marque":marque, "name":name, "prix":prix, "variations":variations, "name_search":name_search, "name_site":name_site, "fullname":marque + " " + name}
-                if self.name_site == "alltricks.fr":
+                if self.name_site == "alltricks.fr" or self.name_site == "culturevelo.com":
                     #print(product)
                     variations_temp = product.find_all(variations_tag[0], attrs={variations_tag[1]:variations_tag[2]})
                     #print(variations_temp)
@@ -394,7 +423,6 @@ class sites():
                     if m and m.group(1):
                         supermodelId = m.group(1)
 
-
                 if self.name_site == "cyclable.com":
                     import re
 
@@ -404,6 +432,16 @@ class sites():
                     
                     if m and m.group(1):
                         supermodelId = m.group(1)
+
+                if self.name_site == "culturevelo.com":
+                    import re
+                    m = re.search( r"""article class=\"dalle\" id=\"[a-z]+([0-9]+)\"""", str(product) )
+                    if m and m.group(1):
+                        supermodelId = m.group(1)
+                    m = re.search( r"""<a href=\"(.*=)\" """, str(product) )
+                    if m and m.group(1):
+                        uri = m.group(1)
+                    url = "https://www." + self.name_site + uri
 
                 if supermodelId != "" and marque:
                     if url and url != "":
