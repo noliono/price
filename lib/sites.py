@@ -96,7 +96,10 @@ class sites():
             #print(json.dumps(datas))
             #print(json.dumps(datas[5]["data"]["blocks"]["items"]))
             #exit()
-            items = datas[5]["data"]["blocks"]["items"]
+            if "data" in datas[5]:
+                items = datas[5]["data"]["blocks"]["items"]
+            else:
+                items=[]
 
             while len(items) != 0 and len(self.products[0].contents) != 0:
 
