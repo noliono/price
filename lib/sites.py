@@ -135,7 +135,10 @@ class sites():
                 if len(self.products) != 0:
                     #datas = json.loads(self.products[0].contents[0])["_ctx"]["data"]
                     datas = json.loads(self.products[0].contents[0].replace("__DKT = ",""))["_ctx"]["data"]
-                    items = datas[5]["data"]["blocks"]["items"]
+                    if "data" in datas[5] and "blocks" in datas[5]["data"]:
+                        items = datas[5]["data"]["blocks"]["items"]
+                    else:
+                        items=[]
                 
                 #print(items)
 
