@@ -108,7 +108,10 @@ class sites():
                     #supermodelId = kk["models"][0]["modelId"]
                     for kkk in kk["models"]:
                         supermodelId = kkk["modelId"]
-                        name = kkk["webLabel"]
+                        if "webLabel" in kkk: 
+                            name = kkk["webLabel"]
+                        else: 
+                            name = ""
                         prix = kkk["price"]
                         variations = kkk["availableSizes"]
                         url = "https://" + self.name_site + "/" + kkk["url"]
