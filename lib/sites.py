@@ -96,7 +96,7 @@ class sites():
             #print(json.dumps(datas))
             #print(json.dumps(datas[5]["data"]["blocks"]["items"]))
             #exit()
-            if "data" in datas[5]:
+            if "data" in datas[5] and "blocks" in datas[5]["data"]:
                 items = datas[5]["data"]["blocks"]["items"]
             else:
                 items=[]
