@@ -273,16 +273,19 @@ class sites():
             'vtc électrique', 'vtc enfant','vtc','vtt']
 
             for product in self.products:
-                logging.debug("product = " + str(product))
+                #logging.debug("product = " + str(product))
                 if self.name_site == "culturevelo.com" and "dalleconseil" in str(product):
                     continue
                 if len(marque_tag) > 1:
                     marque = self.trim_the_ends( product.find(marque_tag[0], attrs={marque_tag[1]:marque_tag[2]}) )
+                    #logging.debug(marque.contents)
                     if self.name_site == "probikeshop.fr" or self.name_site == "alltricks.fr" and marque:
                         for marquee in marque:
                             marque = self.trim_the_ends(marquee)
-                    elif self.name_site == "bikester.fr" or self.name_site == "cyclable.com" and marque:
+                    elif self.name_site == "bikester.fr" and marque:
                         marque = self.trim_the_ends( product.find(marque_tag[0], attrs={marque_tag[1]:marque_tag[2]}).contents[0] )
+                    elif self.name_site == "cyclable.com" and marque:
+                        marque = self.trim_the_ends( marque.contents[1] ).text
                 else:
                     if self.name_site == "culturevelo.com":
                         marque = self.trim_the_ends( product.find(marque_tag[0]).contents[0] )
@@ -313,11 +316,11 @@ class sites():
                 if marque and name:
                     name = name.replace(marque + " ","")
                 prix = product.find(price_tag[0], attrs={price_tag[1]:price_tag[2]})
-                logging.debug(prix)
                 if self.name_site == "alltricks.fr":
                     prix = self.trim_the_ends( prix.contents[len(prix)-1].contents[0]).encode('ascii','ignore').decode()
                 else:
                     prix = self.trim_the_ends( prix.contents[len(prix)-1] ).encode('ascii','ignore').decode()
+                logging.debug(prix)
                 '''
                 if len(prix) == 1:
                     prix = self.trim_the_ends( prix.contents[0] ).encode('ascii','ignore').decode()
