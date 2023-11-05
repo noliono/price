@@ -35,7 +35,7 @@ cyclable.com:
   price: "span,class,price"
   price_sale: ""
   name: "h3,class,product-item-title"
-  marque: "span,itemprop,name"
+  marque: "div,class,d-none" #"span,itemprop,name"
   variations: ""
   number_articles: ""
   number_pages: "div,id,pagination_bottom,li,span"
