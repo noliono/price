@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 from urllib.parse import urlparse
-from elasticsearch import Elasticsearch
+from elasticsearch import Elasticsearch, helpers
 from datetime import datetime
 import yaml #pyyaml
 import json
@@ -26,9 +26,16 @@ if not configyml["elastic"]["apiid"]:
 
 def addtoelastic(matox):
     elasticindexMonth = configyml["elastic"]["index"] + "-" + datetime.now().strftime("%Y.%m")
-    for key,mato in matox.items():
-        mato["@timestamp"] = datetime.utcnow()
-        resp = es.index(index=elasticindexMonth, document=mato)
+    #for key,mato in matox.items():
+    #    mato["@timestamp"] = datetime.utcnow()
+    #   resp = es.index(index=elasticindexMonth, document=mato)
+    #matox2 = [dict(item, **{'@timestamp':datetime.utcnow()}) for item in matox]
+    matox2 = list()
+    for item in matox:
+        #print(item)
+        matox[item].update( {'@timestamp':datetime.utcnow()})
+        matox2.append(matox[item])
+    helpers.bulk(es, matox2, index=elasticindexMonth)
     es.indices.refresh(index=elasticindexMonth)
 
 def searchelastic(matox):
