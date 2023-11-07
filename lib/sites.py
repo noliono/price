@@ -242,13 +242,50 @@ class sites():
             #print(str(len(matox)) + "/" + str(number_articles) + "/" + str(i) + "/" + str(number_pages))
             #print(str(len(matox)) + " / " + str(number_articles) )
             pageslist=["page=","p="]
-            for page in pageslist:
-                if page in self.URL and i > 1:
-                    self.URL = re.sub(page+"[0-9]*", page + str(i), self.URL)
-                    logging.info("URL=" + str(self.URL))
-                    self.response = requests.get(self.URL, headers=self.headers)
-                    self.soup = bs4.BeautifulSoup(self.response.text, "html.parser")
-                    self.products = self.soup.find_all(self.name_tree_tag[0], attrs={self.name_tree_tag[1]:self.name_tree_tag[2]})
+            if i > 1:
+                for page in pageslist:
+                    if page in self.URL:
+                        self.URL = re.sub(page+"[0-9]*", page + str(i), self.URL)
+                if self.name_site == "culturevelo.com":
+                    '''
+                    #<input type="hidden" id="URLNEXT" value="/shop/Produits/ListeAjaxFF?filterCategoryPathROOT=V%C3%A9los&filterCategoryPathROOT%2FV%C3%A9los=BMX&page=2&followSearch=9699&navigation=true&verbose=true"/>
+                    if self.soup.find("input", attrs={"id":"URLNEXT"}):
+                        self.URL = 'https://www.culturevelo.com' + self.soup.find("input", attrs={"id":"URLNEXT"}).get("value")
+                    '''
+                    '''
+                    <script type="text/javascript">
+                        if(domCharge == 1){;
+
+                            // affichage de la suite de produits
+                            
+                            document.getElementById("URLNEXT").value = "/shop/Produits/ListeAjaxFF?filterCategoryPathROOT=V%C3%A9los&filterCategoryPathROOT%2FV%C3%A9los=Electriques&page=2&followSearch=9999&navigation=true&verbose=true" ;
+                            document.getElementById("PAGEENCOURS").value = "1" ;
+                            document.getElementById("MAXPAGES").value = "41";
+                            taggerTop();
+
+                            $(function () {
+                            $(".lazy").lazy(
+                                //		{threshold : 200}
+                                );
+                            });
+
+                            document.location = '#finpage'+(document.getElementById("PAGEENCOURS").value - 1);
+
+                                
+                        }
+
+                    </script>
+                    '''
+                    #self.URL = 'https://www.culturevelo.com' + self.soup.find("input", attrs={"id":"URLNEXT"}).get("value")
+                    #print( self.soup.find_all("script", attrs={"type":"text/javascript"})[23] )
+                    #print(str(self.soup))
+                    m = re.search( r"""document\.getElementById\(\"URLNEXT\"\).value = \"(.*)\" ;""", str(self.soup) )
+                    if m and m.group(1):
+                        self.URL = 'https://www.culturevelo.com' + m.group(1)
+                logging.info("URL=" + str(self.URL))
+                self.response = requests.get(self.URL, headers=self.headers)
+                self.soup = bs4.BeautifulSoup(self.response.text, "html.parser")
+                self.products = self.soup.find_all(self.name_tree_tag[0], attrs={self.name_tree_tag[1]:self.name_tree_tag[2]})
 
             if not self.products:
                 logging.error("Error: No products found !")
@@ -366,8 +403,13 @@ class sites():
                     #print(variations_temp)
                     #exit()
                     variationlist = list()
-                    for variation in variations_temp:
-                        variationlist.append(variation.contents[0])
+                    if self.name_site == "culturevelo.com":
+                        variations_temp = variations_temp[0].contents[0].split(",")
+                        for variation in variations_temp:
+                            variationlist.append(variation)
+                    elif self.name_site == "alltricks.fr":
+                        for variation in variations_temp:
+                            variationlist.append(variation.contents[0])
                     variations = variationlist
                 supermodelId = ""
                 '''
