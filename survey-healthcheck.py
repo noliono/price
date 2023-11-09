@@ -21,7 +21,7 @@ if not configyml["elastic"]["apiid"]:
 missing = list()
 
 for site in searchsite:
-    resp = es.search(index=elasticindex, query={ "bool": { "must": [ { "prefix": { "name_site": site } }, { "range": { "@timestamp": { "gte": "now-1d/d", "lte": "now/d" } } } ] } },size=1)
+    resp = es.search(index=elasticindex, query={ "bool": { "must": [ { "prefix": { "name_site": site } }, { "range": { "@timestamp": { "gte": "now-7d/d", "lte": "now/d" } } } ] } },size=1)
     #resp = es.search(index=elasticindex, query={ "bool": { "must": [ { "prefix": { "name_site": site } }, { "range": { "@timestamp": { "gte": "now-10h/h", "lte": "now/h" } } } ] } },size=1)
     #print(resp)
     if len(resp["hits"]["hits"]) >= 1:
