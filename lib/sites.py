@@ -204,6 +204,10 @@ class sites():
                 matox[marque + " " + name + "-" + supermodelId] = {"marque":marque.lower(), "name":name.lower(), "prix":prix, "variations":variations, "name_search":name_search, "name_site":self.name_site, "fullname":marque.lower() + " " + name.lower(), "modelId":supermodelId, "url":url}
         return matox
 
+    def interceptor(request):
+        for headername,headervalue in self.headers.items():
+            request.headers[headername] = headervalue
+
     def generic(self,name_search):
         matox = dict()
         variations = ""
@@ -285,6 +289,24 @@ class sites():
                 logging.info("URL=" + str(self.URL))
                 self.response = requests.get(self.URL, headers=self.headers)
                 self.soup = bs4.BeautifulSoup(self.response.text, "html.parser")
+                self.products = self.soup.find_all(self.name_tree_tag[0], attrs={self.name_tree_tag[1]:self.name_tree_tag[2]})
+
+            if self.name_site == "intersport.fr":
+                # apt install firefox-esr
+                from pyvirtualdisplay import Display
+                #from selenium import webdriver
+                from seleniumwire import webdriver
+                from selenium.webdriver.firefox.options import Options 
+                display = Display(visible=0, size=(800, 600))
+                display.start()
+                options = Options() 
+                options.add_argument("-headless")
+                driver = webdriver.Firefox(options=options)
+                driver.request_interceptor = self.interceptor
+                driver.get(self.URL)
+
+                html = driver.page_source
+                self.soup = bs4.BeautifulSoup(html, "html.parser")
                 self.products = self.soup.find_all(self.name_tree_tag[0], attrs={self.name_tree_tag[1]:self.name_tree_tag[2]})
 
             if not self.products:
@@ -488,13 +510,17 @@ class sites():
                         supermodelId = m.group(1)
 
                 if self.name_site == "culturevelo.com":
+                    
                     import re
                     m = re.search( r"""article class=\"dalle\" id=\"[a-z]+([0-9]+)\"""", str(product) )
                     if m and m.group(1):
                         supermodelId = m.group(1)
+                    '''
                     m = re.search( r"""<a href=\"(.*=)\" """, str(product) )
                     if m and m.group(1):
                         uri = m.group(1)
+                    '''
+                    uri = product.find('a').get('href')
                     url = "https://www." + self.name_site + uri
 
                 if supermodelId != "" and marque:
