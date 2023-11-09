@@ -50,7 +50,7 @@ culturevelo.com:
   number_articles: "" #"div,class,count"
   number_pages: "" #381/27=14,11 => 15 ?
 intersport.fr:
-  name_tree: "div,class,product-grid__card"
+  name_tree: "div,id,productList" #"div,class,product-grid__card"
   price: "span,class,product-card__price"
   price_sale: "span,class,product-card__price--alert"
   name: "a,class,product-url"
