@@ -512,7 +512,11 @@ class sites():
                 if self.name_site == "culturevelo.com":
                     
                     import re
-                    m = re.search( r"""article class=\"dalle\" id=\"[a-z]+([0-9]+)\"""", str(product) )
+                    ''' product : 
+                    * 10/11/2023 08h25:
+                    <article class="dalle code-SA29FT7__220" id="dallep353544"><img alt="Moustache-Shop" class="marque" src="/shop/images/Logos/fit/Moustache-Shop.png"><p class="promotion-sticker">- 0%</p><p class="nouveaute-sticker">Nouveau</p><p class="flash-sticker">Un seul produit à ce prix</p><p class="top-sticker">Top</p><a href="/shop/moustache-samedi-29-trail-7-353544?source=ffrech&amp;recherche=" onclick="javascript:tracking.click('fr','gupii36lrd7tvb460qiqahkose','353544','353544','*','1','1','1','27','','');"><div class="visuel-produit"><img alt="VTT électrique Moustache SAMEDI 29 TRAIL 7 750Wh" class="prod-img lazy" data-src="https://static.cyclelab.eu/velos/moustache/2007/lowres/sa29ft7--220-samedi-29-trail-7-side-drivetrain-view-studio-1.jpg"/></div><h3>Moustache</h3><h4>Vtt électrique Moustache samedi 29 trail 7 750wh<span class="dispo" style="color:green">Disponible en ligne et en magasin</span></h4><div class="dalle-prix">6 899,00€</div></a></img></article>
+                    '''
+                    m = re.search( r"""article class=\"dalle.*\" id=\"[a-z]+([0-9]+)\"""", str(product) )
                     if m and m.group(1):
                         supermodelId = m.group(1)
                     '''
