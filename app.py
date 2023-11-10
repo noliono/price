@@ -261,7 +261,10 @@ if args.send:
                     ## Pour envoi sur canal test
                     #configyml["discord"][kind] = "https://discordapp.com/api/webhooks/1093862613869404310/nCxY36jJCzzltRxp1w9WHQW1CW3bVEGZabEmXCtst2aHkHHAlOnMacjQLN5TB9g1VNWq"
                     ##
-                    embed = DiscordEmbed(title=newmatox["fullname"],color="0fbff8",url=newmatox["url"])
+                    if 'url' in newmatox:
+                        embed = DiscordEmbed(title=newmatox["fullname"],color="0fbff8",url=newmatox["url"])
+                    else:
+                        embed = DiscordEmbed(title=newmatox["fullname"],color="0fbff8")
                     #if thumb: embed.set_thumbnail(url = thumb)
                     embed.set_timestamp()
                     for histo in newmatox["histoprix"]:
