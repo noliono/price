@@ -5,6 +5,7 @@ import yaml
 import logging
 import random
 import re
+import time
 #import unidecode
 
 with open('config/config.yml', 'r') as file:
@@ -58,8 +59,9 @@ class sites():
         self.URL = URL
         with open('config/site.yml', 'r') as file:
             self.siteyml = yaml.safe_load(file)
-        self.response = requests.get(URL, headers=self.headers) #, allow_redirects=True)
-        self.soup = bs4.BeautifulSoup(self.response.text, "html.parser")
+        #self.response = requests.get(URL, headers=self.headers) #, allow_redirects=True)
+        #self.soup = bs4.BeautifulSoup(self.response.text, "html.parser")
+        self.bs4WithJS()
         self.name_tree_tag = self.siteyml[name_site]["name_tree"].split(',')
         self.products = self.soup.find_all(self.name_tree_tag[0], attrs={self.name_tree_tag[1]:self.name_tree_tag[2]})
         #self.products = self.soup.find_all("script")
@@ -159,6 +161,93 @@ class sites():
             '''
         return matox
 
+    def bs4WithJS(self):
+        from pyvirtualdisplay import Display
+        #from selenium import webdriver
+        from seleniumwire import webdriver
+        from selenium.webdriver.firefox.options import Options 
+        display = Display(visible=0, size=(800, 600))
+        display.start()
+        options = Options() 
+        options.add_argument("-headless")
+        driver = webdriver.Firefox(options=options)
+        driver.request_interceptor = self.interceptor
+        driver.get(self.URL)
+
+        html = driver.page_source
+        self.soup = bs4.BeautifulSoup(html, "html.parser") 
+
+
+    def parsejson(self,name_search):
+        matox = dict()
+
+        name_tree2_tag = self.siteyml[self.name_site]["name_tree2"].split(',')
+        #print(self.products[0].string)
+        #print(name_tree2_tag)
+        #exit()
+        #print(json.loads(self.products[0].string)["props"]["pageProps"]["model"]["items"])
+        myjson = json.loads(self.products[0].string)
+        myitems = myjson
+        for mydict in name_tree2_tag:
+            myitems = myitems[mydict]
+
+        myarti = myjson
+        for tag_arti in self.siteyml[self.name_site]["number_articles"].split(','):
+            myarti = myarti[tag_arti]
+
+        pageslist=["page=","p="]
+        i = 1
+
+        while len(myitems) != 0 and myarti > len(matox) :
+
+            if i > 1:
+                for page in pageslist:
+                    if page in self.URL:
+                        self.URL = re.sub(page+"[0-9]*", page + str(i), self.URL)
+                print(self.URL)
+                time.sleep(30)
+                self.bs4WithJS()
+                #print(self.products)
+                myjson = json.loads(self.products[0].string)
+                myitems = myjson
+                for mydict in name_tree2_tag:
+                    myitems = myitems[mydict]
+
+            for kk in myitems:
+
+                if kk["defaultVariant"]["stockLabel"] == "NO_STOCK":
+                    myarti = myarti - 1
+                    continue
+                supermodelId = str(kk[self.siteyml[self.name_site]["id"]])
+                #marque=kk[self.siteyml[self.name_site]["marque_id"]]
+                marque=str(kk[self.siteyml[self.name_site]["marque_id"]])
+                name=kk[self.siteyml[self.name_site]["name"]]
+                #print(name)
+                prix = kk
+                for mydict in self.siteyml[self.name_site]["price_sale"].split(','):
+                    prix = prix[mydict]
+                variations_tag = self.siteyml[self.name_site]["variations"].split(',')
+                variations = list()
+                #print(kk)
+                if kk[variations_tag[0]]:
+                    for kkk in kk[variations_tag[0]][0][variations_tag[1]]:
+                        variations.append(kkk[variations_tag[2]])
+                #print(variations)
+                url="https://" + self.name_site + kk[self.siteyml[self.name_site]["url"]]
+        
+                matox[marque + " " + name + "-" + supermodelId] = {"marque":marque.lower(), "name":name.lower(), "prix":prix, "variations":variations, "name_search":name_search, "name_site":self.name_site, "fullname":marque.lower() + " " + name.lower(), "modelId":supermodelId, "url":url}
+
+            i = i + 1
+        #price_tag = self.siteyml[self.name_site]["price"].split(',')
+        #price_sale_tag = self.siteyml[self.name_site]["price_sale"].split(',')
+        #name_tag = self.siteyml[self.name_site]["name"].split(',')
+        #marque_tag = self.siteyml[self.name_site]["marque"].split(',')
+        #variations_tag = self.siteyml[self.name_site]["variations"].split(',')
+        print(len(matox))
+        print(matox)
+        #exit()
+
+        return matox
 
     def aliexpress(self,name_search): #Page multiples à gérer
         matox = dict()
