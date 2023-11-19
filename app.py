@@ -95,6 +95,8 @@ def fetchwebsite():
             #continue
         elif name_site == "fr.aliexpress.com":
             matox = sites.sites(URL,name_site).aliexpress(name_search)
+        elif name_site == "deporvillage.fr":
+            matox = sites.sites(URL,name_site).parsejson(name_search)
         else:
             matox = sites.sites(URL,name_site).generic(name_search)
         logging.debug(matox)
