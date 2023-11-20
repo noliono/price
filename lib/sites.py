@@ -216,7 +216,7 @@ class sites():
                 for page in pageslist:
                     if page in self.URL:
                         self.URL = re.sub(page+"[0-9]*", page + str(i), self.URL)
-                print(self.URL)
+                #print(self.URL)
                 #time.sleep(30)
                 self.bs4WithJS()
                 self.products = self.soup.find_all(self.name_tree_tag[0], attrs={self.name_tree_tag[1]:self.name_tree_tag[2]})
@@ -247,7 +247,7 @@ class sites():
                         variations.append(kkk[variations_tag[2]])
                 #print(variations)
                 url="https://" + self.name_site + kk[self.siteyml[self.name_site]["url"]]
-                print(marque + " " + name + "-" + supermodelId)
+                #print(marque + " " + name + "-" + supermodelId)
                 matox[marque + " " + name + "-" + supermodelId] = {"marque":marque.lower(), "name":name.lower(), "prix":prix, "variations":variations, "name_search":name_search, "name_site":self.name_site, "fullname":marque.lower() + " " + name.lower(), "modelId":supermodelId, "url":url}
 
             i = i + 1
@@ -256,8 +256,8 @@ class sites():
         #name_tag = self.siteyml[self.name_site]["name"].split(',')
         #marque_tag = self.siteyml[self.name_site]["marque"].split(',')
         #variations_tag = self.siteyml[self.name_site]["variations"].split(',')
-        print(len(matox))
-        print(matox)
+        #print(len(matox))
+        #print(matox)
         #exit()
 
         return matox
