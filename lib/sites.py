@@ -5,7 +5,7 @@ import yaml
 import logging
 import random
 import re
-import time
+#import time
 #import unidecode
 
 with open('config/config.yml', 'r') as file:
@@ -190,10 +190,22 @@ class sites():
         myitems = myjson
         for mydict in name_tree2_tag:
             myitems = myitems[mydict]
-
         myarti = myjson
         for tag_arti in self.siteyml[self.name_site]["number_articles"].split(','):
             myarti = myarti[tag_arti]
+        
+        mybrand = myjson
+        for tag_arti in self.siteyml[self.name_site]["brandlist"].split(','):
+            mybrand = mybrand[tag_arti]
+        for my in mybrand:
+            if my["id"] == 66:
+                mybrand = my['options']
+        mybranddict = dict()
+        for my in mybrand:
+            mybranddict[my['id']] = my['label']
+        
+        #print(mybranddict[10300])
+        #exit()
 
         pageslist=["page=","p="]
         i = 1
@@ -205,9 +217,10 @@ class sites():
                     if page in self.URL:
                         self.URL = re.sub(page+"[0-9]*", page + str(i), self.URL)
                 print(self.URL)
-                time.sleep(30)
+                #time.sleep(30)
                 self.bs4WithJS()
-                #print(self.products)
+                self.products = self.soup.find_all(self.name_tree_tag[0], attrs={self.name_tree_tag[1]:self.name_tree_tag[2]})
+
                 myjson = json.loads(self.products[0].string)
                 myitems = myjson
                 for mydict in name_tree2_tag:
@@ -220,7 +233,7 @@ class sites():
                     continue
                 supermodelId = str(kk[self.siteyml[self.name_site]["id"]])
                 #marque=kk[self.siteyml[self.name_site]["marque_id"]]
-                marque=str(kk[self.siteyml[self.name_site]["marque_id"]])
+                marque=mybranddict[kk[self.siteyml[self.name_site]["marque_id"]]]
                 name=kk[self.siteyml[self.name_site]["name"]]
                 #print(name)
                 prix = kk
@@ -234,7 +247,7 @@ class sites():
                         variations.append(kkk[variations_tag[2]])
                 #print(variations)
                 url="https://" + self.name_site + kk[self.siteyml[self.name_site]["url"]]
-        
+                print(marque + " " + name + "-" + supermodelId)
                 matox[marque + " " + name + "-" + supermodelId] = {"marque":marque.lower(), "name":name.lower(), "prix":prix, "variations":variations, "name_search":name_search, "name_site":self.name_site, "fullname":marque.lower() + " " + name.lower(), "modelId":supermodelId, "url":url}
 
             i = i + 1

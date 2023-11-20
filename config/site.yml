@@ -81,6 +81,7 @@ deporvillage.fr:
   name_tree2: "props,pageProps,model,items"
   number_pages: ""
   number_articles: "props,pageProps,model,pagination,itemsCount"
+  brandlist: "props,pageProps,model,filters"
   id: "id"
   marque_id: "brand"
   #     retrouvé le nom :       filters -> "id":66, "type":"checkbox", "label":"Marques", "options" -> id":1738, "label":"BH Bikes",
