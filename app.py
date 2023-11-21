@@ -6,19 +6,29 @@ from datetime import datetime
 import yaml #pyyaml
 import json
 import logging
+import logging.handlers
 from lib import sites
 import argparse
 import json
 
 
-logging.info("################ Script start #################################")
-
 with open('config/config.yml', 'r') as file:
     configyml = yaml.safe_load(file)
 
-logging.basicConfig(filename="/logs/app.log",level=configyml["level"])
+#logging.basicConfig(filename="/logs/app.log",level=configyml["level"])
 logging.getLogger("urllib3").setLevel(logging.ERROR)
 logging.getLogger("elastic_transport").setLevel(logging.ERROR)
+
+# Creates the log handler in case the default move does not work
+handler = logging.handlers.RotatingFileHandler("/logs/app.log",maxBytes=2000000, backupCount=5)
+handler.setFormatter(logging.Formatter(u'%(asctime)s %(levelname)-s -- %(module)s:%(lineno)d - %(message)s'))
+
+# Creates the logger
+logger = logging.getLogger("prix-app")
+logger.setLevel(configyml["level"])
+logger.addHandler(handler)
+
+logger.info("################ Script start #################################")
 
 ELASTIC_NODES = configyml["elastic"]["nodes"]
 if not configyml["elastic"]["apiid"]:
@@ -86,12 +96,12 @@ def fetchwebsite():
     matoxx = dict()
     for name_search,URL in configyml["tosurvey"].items():
         name_site = urlparse(URL).netloc.replace("www.","")
-        logging.info("name site = " + name_site + " / name_search=" + name_search + " / URL=" + URL)
+        logger.info("name site = " + name_site + " / name_search=" + name_search + " / URL=" + URL)
         matox = dict()
         if name_site == "decathlon.fr":
             matox = sites.sites(URL,name_site).decathlon(name_search)
             #addtoelastic(matox)
-            #logging.debug(matox)
+            #logger.debug(matox)
             #continue
         elif name_site == "fr.aliexpress.com":
             matox = sites.sites(URL,name_site).aliexpress(name_search)
@@ -99,7 +109,7 @@ def fetchwebsite():
             matox = sites.sites(URL,name_site).parsejson(name_search)
         else:
             matox = sites.sites(URL,name_site).generic(name_search)
-        logging.debug(matox)
+        logger.debug(matox)
         if matox: matoxx.update(matox)
     return matoxx
 
@@ -131,7 +141,7 @@ if args.send:
     elasticindex = configyml["elastic"]["index"] + "*"
     maxmatox = 1000 #10000
 
-    logging.info("Search elastic to find new price")
+    logger.info("Search elastic to find new price")
 
     ## Requête elastic pour récupérer une liste de matériel et limite sur les 3 dernières heures pour éviter les produits sans nouveau prix alors que le dernier prix enregistré avait changé
     resp = es.search(index=elasticindex, query={ "bool": { "must": [ {"range": { "@timestamp": { "gte": "now-3h/h"}}}]}}, sort={ "@timestamp": { "order": "desc"} },size=maxmatox)
@@ -146,11 +156,11 @@ if args.send:
             matoxdict["url"] = mato["_source"]["url"]
         matoxlist.append(matoxdict)
 
-    logging.debug("Len matox : " + str(len(matoxlist)))
+    logger.debug("Len matox : " + str(len(matoxlist)))
     # Avoid duplicate
     matoxlist = [x for n, x in enumerate(matoxlist) if x not in matoxlist[:n]]
     ##
-    logging.debug("Len matox whithout duplicate : " + str(len(matoxlist)))
+    logger.debug("Len matox whithout duplicate : " + str(len(matoxlist)))
 
     newmatoxlist = list()
 
@@ -164,7 +174,7 @@ if args.send:
             continue
         NewPrice = float( resp["hits"]["hits"][0]["_source"]["prix"] )
         ActualPrice = float( resp["hits"]["hits"][1]["_source"]["prix"] )
-        #logging.debug( "Mato : " + PrintableMato(mato) + " ## " + str(ActualPrice) + " -> " + str(NewPrice) )
+        #logger.debug( "Mato : " + PrintableMato(mato) + " ## " + str(ActualPrice) + " -> " + str(NewPrice) )
         Pourcentage = 10 #% de réduction
         if NewPrice <= ActualPrice * ( 1 - Pourcentage / 100 ) and ( resp["hits"]["hits"][0]["_source"]["variations"] or "cyclable" in resp["hits"]["hits"][0]["_source"]["name_site"]):
             content = content + PrintableMato(mato) + " ## " + str(ActualPrice) + " -> " + str(NewPrice) + "\r\n"
@@ -178,7 +188,7 @@ if args.send:
                     pricee = doc["_source"]["prix"]
             newmatoxlist.append(tempdict)
 
-    logging.info( "Found " + str(len(content.split("##"))-1) + " new price")
+    logger.info( "Found " + str(len(content.split("##"))-1) + " new price")
 
 
     if args.send == "masto":
@@ -196,7 +206,7 @@ if args.send:
             to_file = 'pytooter_usercred.secret'
         )
 
-        logging.debug("Content = " + str(content))
+        logger.debug("Content = " + str(content))
 
         if len(content) != 0:
             limitmasto = 500
@@ -207,19 +217,19 @@ if args.send:
                     if len(newcontent) + len(cont) < limitmasto:
                         newcontent += cont + "\r\n"
                     else:
-                        logging.info( "Send Masto toot number : " + str(actualtootnumber))
-                        logging.debug( "newcontent = " + newcontent )
+                        logger.info( "Send Masto toot number : " + str(actualtootnumber))
+                        logger.debug( "newcontent = " + newcontent )
                         mastodon.status_post(newcontent) #, spoiler_text=subject)
                         newcontent = ""
                         actualtootnumber = actualtootnumber + 1
                 if newcontent != "":
-                    logging.info( "Send Masto toot number : " + str(actualtootnumber))
-                    logging.debug( "newcontent = " + newcontent )
+                    logger.info( "Send Masto toot number : " + str(actualtootnumber))
+                    logger.debug( "newcontent = " + newcontent )
                     mastodon.status_post(newcontent) #, spoiler_text=subject)
                     newcontent = ""
                     actualtootnumber = actualtootnumber + 1
             else:
-                logging.info( "Send single Masto toot")
+                logger.info( "Send single Masto toot")
                 mastodon.status_post(content) #, spoiler_text=subject)
 
     if args.send == "mail":
@@ -243,12 +253,12 @@ if args.send:
                 conn.login(USERNAME, PASSWORD)
                 try:
                     conn.sendmail(sender, destination.split(','), msg.as_string())
-                    logging.info("Send mail with this change : " + str(content))
+                    logger.info("Send mail with this change : " + str(content))
                 finally:
                     conn.quit()
 
             except Exception as exc:
-                logging.error(exc)
+                logger.error(exc)
 
     if args.send == "discord":
         #from discord_webhook import DiscordWebhook
@@ -304,4 +314,4 @@ if args.send:
         webhook = DiscordWebhook(url=urllog, content="Found " + str(len(content.split("##"))-1) + " new price")
         response = webhook.execute()
 
-logging.info("################ Script end #################################")
+logger.info("################ Script end #################################")

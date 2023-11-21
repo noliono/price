@@ -3,6 +3,7 @@ import bs4
 import json
 import yaml
 import logging
+import logging.handlers
 import random
 import re
 #import time
@@ -15,12 +16,20 @@ from selenium.webdriver.firefox.options import Options
 with open('config/config.yml', 'r') as file:
     configyml = yaml.safe_load(file)
 
-logging.basicConfig(filename="/logs/app.log",level=configyml["level"])
+#logging.basicConfig(filename="/logs/app.log",level=configyml["level"])
 #logging.basicConfig(filename="/logs/app.log",level="DEBUG")
 logging.getLogger("urllib3").setLevel(logging.ERROR)
 logging.getLogger("elastic_transport").setLevel(logging.ERROR)
 logging.getLogger("seleniumwire").setLevel(logging.ERROR)
 
+# Creates the log handler in case the default move does not work
+handler = logging.handlers.RotatingFileHandler("/logs/app.log",maxBytes=2000000, backupCount=5)
+handler.setFormatter(logging.Formatter(u'%(asctime)s %(levelname)-s -- %(module)s:%(lineno)d - %(message)s'))
+
+# Creates the logger
+logger = logging.getLogger("prix-app")
+#logger.setLevel(configyml["level"])
+#logger.addHandler(handler)
 
 class sites():
 
@@ -131,7 +140,7 @@ class sites():
                 pattern = re.compile(r"from=(\d+)&size=(\d+)")
                 newstart = int(pattern.search(self.URL).group(1)) + int(pattern.search(self.URL).group(2))
                 self.URL = re.sub(r"from=\d+", "from=" + str(newstart), self.URL)
-                logging.info("URL=" + str(self.URL))
+                logger.info("URL=" + str(self.URL))
                 self.response = requests.get(self.URL, headers=self.headers)
                 self.soup = bs4.BeautifulSoup(self.response.text, "html.parser")
                 self.products = self.soup.find_all(self.name_tree_tag[0], attrs={self.name_tree_tag[1]:self.name_tree_tag[2]})            
@@ -346,7 +355,7 @@ class sites():
                 number_pages = int(number_pages2.find_all(number_pages_key[3])[-2].find(number_pages_key[4]).contents[0])
             except: 
                 number_pages = 1
-                logging.info("No page found !")
+                logger.info("No page found !")
         else:
             number_pages = 1000
 
@@ -396,7 +405,7 @@ class sites():
                     m = re.search( r"""document\.getElementById\(\"URLNEXT\"\).value = \"(.*)\" ;""", str(self.soup) )
                     if m and m.group(1):
                         self.URL = 'https://www.culturevelo.com' + m.group(1)
-                logging.info("URL=" + str(self.URL))
+                logger.info("URL=" + str(self.URL))
                 self.response = requests.get(self.URL, headers=self.headers)
                 self.soup = bs4.BeautifulSoup(self.response.text, "html.parser")
                 self.products = self.soup.find_all(self.name_tree_tag[0], attrs={self.name_tree_tag[1]:self.name_tree_tag[2]})
@@ -420,8 +429,8 @@ class sites():
                 self.products = self.soup.find_all(self.name_tree_tag[0], attrs={self.name_tree_tag[1]:self.name_tree_tag[2]})
 
             if not self.products:
-                logging.error("Error: No products found !")
-                logging.debug(self.response.text)
+                logger.error("Error: No products found !")
+                logger.debug(self.response.text)
                 #continue #exit()
                 break
 
@@ -442,12 +451,12 @@ class sites():
             'vtc électrique', 'vtc enfant','vtc','vtt']
 
             for product in self.products:
-                #logging.debug("product = " + str(product))
+                #logger.debug("product = " + str(product))
                 if self.name_site == "culturevelo.com" and "dalleconseil" in str(product):
                     continue
                 if len(marque_tag) > 1:
                     marque = self.trim_the_ends( product.find(marque_tag[0], attrs={marque_tag[1]:marque_tag[2]}) )
-                    #logging.debug(marque.contents)
+                    #logger.debug(marque.contents)
                     if self.name_site == "probikeshop.fr" or self.name_site == "alltricks.fr" and marque:
                         for marquee in marque:
                             marque = self.trim_the_ends(marquee)
@@ -489,7 +498,7 @@ class sites():
                     prix = self.trim_the_ends( prix.contents[len(prix)-1].contents[0]).encode('ascii','ignore').decode()
                 else:
                     prix = self.trim_the_ends( prix.contents[len(prix)-1] ).encode('ascii','ignore').decode()
-                logging.debug(prix)
+                logger.debug(prix)
                 '''
                 if len(prix) == 1:
                     prix = self.trim_the_ends( prix.contents[0] ).encode('ascii','ignore').decode()
