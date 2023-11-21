@@ -173,10 +173,12 @@ class sites():
         driver = webdriver.Firefox(options=options)
         driver.request_interceptor #= self.interceptor
         driver.get(self.URL)
+        html = driver.page_source
+
+        driver.close()
         del driver.request_interceptor
         del driver.response_interceptor
 
-        html = driver.page_source
         self.soup = bs4.BeautifulSoup(html, "html.parser") 
 
 
