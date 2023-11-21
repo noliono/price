@@ -7,6 +7,10 @@ import random
 import re
 #import time
 #import unidecode
+from pyvirtualdisplay import Display
+#from selenium import webdriver
+from seleniumwire import webdriver
+from selenium.webdriver.firefox.options import Options 
 
 with open('config/config.yml', 'r') as file:
     configyml = yaml.safe_load(file)
@@ -15,6 +19,8 @@ logging.basicConfig(filename="/logs/app.log",level=configyml["level"])
 #logging.basicConfig(filename="/logs/app.log",level="DEBUG")
 logging.getLogger("urllib3").setLevel(logging.ERROR)
 logging.getLogger("elastic_transport").setLevel(logging.ERROR)
+logging.getLogger("seleniumwire").setLevel(logging.ERROR)
+
 
 class sites():
 
@@ -162,10 +168,7 @@ class sites():
         return matox
 
     def bs4WithJS(self):
-        from pyvirtualdisplay import Display
-        #from selenium import webdriver
-        from seleniumwire import webdriver
-        from selenium.webdriver.firefox.options import Options 
+
         display = Display(visible=0, size=(800, 600))
         display.start()
         options = Options() 
