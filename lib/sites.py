@@ -171,8 +171,10 @@ class sites():
         options = Options() 
         options.add_argument("-headless")
         driver = webdriver.Firefox(options=options)
-        driver.request_interceptor = self.interceptor
+        driver.request_interceptor #= self.interceptor
         driver.get(self.URL)
+        del driver.request_interceptor
+        del driver.response_interceptor
 
         html = driver.page_source
         self.soup = bs4.BeautifulSoup(html, "html.parser") 
@@ -306,10 +308,11 @@ class sites():
                 matox[marque + " " + name + "-" + supermodelId] = {"marque":marque.lower(), "name":name.lower(), "prix":prix, "variations":variations, "name_search":name_search, "name_site":self.name_site, "fullname":marque.lower() + " " + name.lower(), "modelId":supermodelId, "url":url}
         return matox
 
+    '''
     def interceptor(request):
         for headername,headervalue in self.headers.items():
             request.headers[headername] = headervalue
-
+    '''
     def generic(self,name_search):
         matox = dict()
         variations = ""
@@ -404,7 +407,7 @@ class sites():
                 options = Options() 
                 options.add_argument("-headless")
                 driver = webdriver.Firefox(options=options)
-                driver.request_interceptor = self.interceptor
+                driver.request_interceptor # = self.interceptor
                 driver.get(self.URL)
 
                 html = driver.page_source
