@@ -74,9 +74,11 @@ class sites():
         self.URL = URL
         with open('config/site.yml', 'r') as file:
             self.siteyml = yaml.safe_load(file)
-        #self.response = requests.get(URL, headers=self.headers) #, allow_redirects=True)
-        #self.soup = bs4.BeautifulSoup(self.response.text, "html.parser")
-        self.bs4WithJS()
+        if self.name_site == "deporvillage.fr":
+            self.bs4WithJS()
+        else:
+            self.response = requests.get(URL, headers=self.headers) #, allow_redirects=True)
+            self.soup = bs4.BeautifulSoup(self.response.text, "html.parser")
         self.name_tree_tag = self.siteyml[name_site]["name_tree"].split(',')
         self.products = self.soup.find_all(self.name_tree_tag[0], attrs={self.name_tree_tag[1]:self.name_tree_tag[2]})
         #self.products = self.soup.find_all("script")
@@ -234,7 +236,11 @@ class sites():
                         self.URL = re.sub(page+"[0-9]*", page + str(i), self.URL)
                 #print(self.URL)
                 #time.sleep(30)
-                self.bs4WithJS()
+                if self.name_site == "deporvillage.fr":
+                    self.bs4WithJS()
+                else:
+                    self.response = requests.get(URL, headers=self.headers) #, allow_redirects=True)
+                    self.soup = bs4.BeautifulSoup(self.response.text, "html.parser")
                 self.products = self.soup.find_all(self.name_tree_tag[0], attrs={self.name_tree_tag[1]:self.name_tree_tag[2]})
 
                 myjson = json.loads(self.products[0].string)
