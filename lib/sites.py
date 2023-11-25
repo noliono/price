@@ -74,7 +74,7 @@ class sites():
         self.URL = URL
         with open('config/site.yml', 'r') as file:
             self.siteyml = yaml.safe_load(file)
-        if self.name_site == "deporvillage.fr":
+        if self.name_site == "deporvillage.fr" or self.name_site == "alltricks.fr":
             self.bs4WithJS()
         else:
             self.response = requests.get(URL, headers=self.headers) #, allow_redirects=True)
@@ -184,9 +184,64 @@ class sites():
         display.start()
         options = Options() 
         options.add_argument("-headless")
+        #options.add_argument("--lang=fr-FR")
         driver = webdriver.Firefox(options=options)
         driver.request_interceptor #= self.interceptor
         driver.get(self.URL)
+        if self.name_site == "alltricks.fr":
+            from selenium.webdriver.common.by import By
+            #from PIL import Image #pip install Pillow
+            import time
+            SCROLL_PAUSE_TIME = 10
+            # Get scroll height
+            last_height = driver.execute_script("return document.body.scrollHeight")
+
+            #<div id="didomi-popup" class="didomi-popup-backdrop didomi-notice-popup didomi-popup__backdrop"
+            #driver.save_screenshot("image1.png")
+            #if driver.find_element(By.ID, 'didomi-notice-agree-button'):
+            try:
+                driver.find_element(By.ID, 'didomi-notice-agree-button').click()
+            except:
+                logger.debug('No popup Cookie')
+            #driver.save_screenshot("image2.png")
+            #if driver.find_element(By.CLASS_NAME, 'locale-redirect-popin'):
+            try:
+                driver.find_element(By.CLASS_NAME, 'close-btn').click()
+            except:
+                logger.debug('No popup lang')
+            #driver.save_screenshot("image3.png")
+            #exit()
+
+            while True:
+                # Scroll down to bottom
+                driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+
+                # Wait to load page
+                time.sleep(SCROLL_PAUSE_TIME)
+
+                # Calculate new scroll height and compare with last scroll height
+                new_height = driver.execute_script("return document.body.scrollHeight")
+                if new_height == last_height:
+                    #class="alltricks-Pager__Waypoint alltricks-Pager__Waypoint--WaitClick"
+                    #logger.debug( driver.find_element(By.CLASS_NAME, 'alltricks-Pager__Waypoint') )
+                    #driver.save_screenshot("image1.png")
+                    #print( driver.find_element(By.CLASS_NAME, 'alltricks-Pager__Waypoint--WaitClick') )
+                    try:
+                        #driver.find_element(By.CSS_SELECTOR, 'div.class.alltricks-Pager__Waypoint.alltricks-Pager__Waypoint--WaitClick')
+                        driver.find_element(By.CLASS_NAME, 'alltricks-Pager__Waypoint--WaitClick')
+                    #driver.find_elements(By.XPATH("//div[contains(@class, 'alltricks-Pager__Waypoint--WaitClick')]")):
+                    #if driver.find_element(By.CLASS_NAME, 'alltricks-Pager__Waypoint'):
+                        #driver.save_screenshot("image1.png")
+                        driver.find_element(By.CLASS_NAME, 'alltricks-Pager__Waypoint').click()
+                        logger.debug("Encore des produits")
+                        #driver.save_screenshot("image2.png")
+                    except:
+                        break
+
+                    #else:
+                    #    break
+                last_height = new_height
+        
         html = driver.page_source
 
         driver.close()
@@ -456,8 +511,11 @@ class sites():
             'vtc électrique', 'vélo de course électrique', 'vélo de gravel', 'vélo de course', 'vtt électrique', 'vtt enfant', 'vtt trail/enduro', 'cross country', 'vtt trail/randonnée','vtt trail',
             'vtc électrique', 'vtc enfant','vtc','vtt']
 
+            logger.debug(len(self.products))
+            #exit()
+
             for product in self.products:
-                #logger.debug("product = " + str(product))
+                logger.debug("product = " + str(product))
                 if self.name_site == "culturevelo.com" and "dalleconseil" in str(product):
                     continue
                 if len(marque_tag) > 1:
@@ -504,7 +562,7 @@ class sites():
                     prix = self.trim_the_ends( prix.contents[len(prix)-1].contents[0]).encode('ascii','ignore').decode()
                 else:
                     prix = self.trim_the_ends( prix.contents[len(prix)-1] ).encode('ascii','ignore').decode()
-                logger.debug(prix)
+                #logger.debug(prix)
                 '''
                 if len(prix) == 1:
                     prix = self.trim_the_ends( prix.contents[0] ).encode('ascii','ignore').decode()
