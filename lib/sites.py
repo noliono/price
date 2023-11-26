@@ -3,17 +3,33 @@ import bs4
 import json
 import yaml
 import logging
+import logging.handlers
 import random
 import re
+#import time
 #import unidecode
+from pyvirtualdisplay import Display
+#from selenium import webdriver
+from seleniumwire import webdriver
+from selenium.webdriver.firefox.options import Options 
 
 with open('config/config.yml', 'r') as file:
     configyml = yaml.safe_load(file)
 
-logging.basicConfig(filename="/logs/app.log",level=configyml["level"])
+#logging.basicConfig(filename="/logs/app.log",level=configyml["level"])
 #logging.basicConfig(filename="/logs/app.log",level="DEBUG")
 logging.getLogger("urllib3").setLevel(logging.ERROR)
 logging.getLogger("elastic_transport").setLevel(logging.ERROR)
+logging.getLogger("seleniumwire").setLevel(logging.ERROR)
+
+# Creates the log handler in case the default move does not work
+handler = logging.handlers.RotatingFileHandler("/logs/app.log",maxBytes=2000000, backupCount=5)
+handler.setFormatter(logging.Formatter(u'%(asctime)s %(levelname)-s -- %(module)s:%(lineno)d - %(message)s'))
+
+# Creates the logger
+logger = logging.getLogger("prix-app")
+#logger.setLevel(configyml["level"])
+#logger.addHandler(handler)
 
 class sites():
 
@@ -58,8 +74,11 @@ class sites():
         self.URL = URL
         with open('config/site.yml', 'r') as file:
             self.siteyml = yaml.safe_load(file)
-        self.response = requests.get(URL, headers=self.headers) #, allow_redirects=True)
-        self.soup = bs4.BeautifulSoup(self.response.text, "html.parser")
+        if self.name_site == "deporvillage.fr" or self.name_site == "alltricks.fr":
+            self.bs4WithJS()
+        else:
+            self.response = requests.get(URL, headers=self.headers) #, allow_redirects=True)
+            self.soup = bs4.BeautifulSoup(self.response.text, "html.parser")
         self.name_tree_tag = self.siteyml[name_site]["name_tree"].split(',')
         self.products = self.soup.find_all(self.name_tree_tag[0], attrs={self.name_tree_tag[1]:self.name_tree_tag[2]})
         #self.products = self.soup.find_all("script")
@@ -123,7 +142,7 @@ class sites():
                 pattern = re.compile(r"from=(\d+)&size=(\d+)")
                 newstart = int(pattern.search(self.URL).group(1)) + int(pattern.search(self.URL).group(2))
                 self.URL = re.sub(r"from=\d+", "from=" + str(newstart), self.URL)
-                logging.info("URL=" + str(self.URL))
+                logger.info("URL=" + str(self.URL))
                 self.response = requests.get(self.URL, headers=self.headers)
                 self.soup = bs4.BeautifulSoup(self.response.text, "html.parser")
                 self.products = self.soup.find_all(self.name_tree_tag[0], attrs={self.name_tree_tag[1]:self.name_tree_tag[2]})            
@@ -159,6 +178,166 @@ class sites():
             '''
         return matox
 
+    def bs4WithJS(self):
+
+        display = Display(visible=0, size=(800, 600))
+        display.start()
+        options = Options() 
+        options.add_argument("-headless")
+        #options.add_argument("--lang=fr-FR")
+        driver = webdriver.Firefox(options=options)
+        driver.request_interceptor #= self.interceptor
+        driver.get(self.URL)
+        if self.name_site == "alltricks.fr":
+            from selenium.webdriver.common.by import By
+            #from PIL import Image #pip install Pillow
+            import time
+            SCROLL_PAUSE_TIME = 10
+            # Get scroll height
+            last_height = driver.execute_script("return document.body.scrollHeight")
+
+            #<div id="didomi-popup" class="didomi-popup-backdrop didomi-notice-popup didomi-popup__backdrop"
+            #driver.save_screenshot("image1.png")
+            #if driver.find_element(By.ID, 'didomi-notice-agree-button'):
+            try:
+                driver.find_element(By.ID, 'didomi-notice-agree-button').click()
+            except:
+                logger.debug('No popup Cookie')
+            #driver.save_screenshot("image2.png")
+            #if driver.find_element(By.CLASS_NAME, 'locale-redirect-popin'):
+            try:
+                driver.find_element(By.CLASS_NAME, 'close-btn').click()
+            except:
+                logger.debug('No popup lang')
+            #driver.save_screenshot("image3.png")
+            #exit()
+
+            while True:
+                # Scroll down to bottom
+                driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+
+                # Wait to load page
+                time.sleep(SCROLL_PAUSE_TIME)
+
+                # Calculate new scroll height and compare with last scroll height
+                new_height = driver.execute_script("return document.body.scrollHeight")
+                if new_height == last_height:
+                    #class="alltricks-Pager__Waypoint alltricks-Pager__Waypoint--WaitClick"
+                    #logger.debug( driver.find_element(By.CLASS_NAME, 'alltricks-Pager__Waypoint') )
+                    #driver.save_screenshot("image1.png")
+                    #print( driver.find_element(By.CLASS_NAME, 'alltricks-Pager__Waypoint--WaitClick') )
+                    try:
+                        #driver.find_element(By.CSS_SELECTOR, 'div.class.alltricks-Pager__Waypoint.alltricks-Pager__Waypoint--WaitClick')
+                        driver.find_element(By.CLASS_NAME, 'alltricks-Pager__Waypoint--WaitClick')
+                    #driver.find_elements(By.XPATH("//div[contains(@class, 'alltricks-Pager__Waypoint--WaitClick')]")):
+                    #if driver.find_element(By.CLASS_NAME, 'alltricks-Pager__Waypoint'):
+                        #driver.save_screenshot("image1.png")
+                        driver.find_element(By.CLASS_NAME, 'alltricks-Pager__Waypoint').click()
+                        logger.debug("Encore des produits")
+                        #driver.save_screenshot("image2.png")
+                    except:
+                        break
+
+                    #else:
+                    #    break
+                last_height = new_height
+        
+        html = driver.page_source
+
+        driver.close()
+        del driver.request_interceptor
+        del driver.response_interceptor
+
+        self.soup = bs4.BeautifulSoup(html, "html.parser") 
+
+
+    def parsejson(self,name_search):
+        matox = dict()
+
+        name_tree2_tag = self.siteyml[self.name_site]["name_tree2"].split(',')
+        #print(self.products[0].string)
+        #print(name_tree2_tag)
+        #exit()
+        #print(json.loads(self.products[0].string)["props"]["pageProps"]["model"]["items"])
+        myjson = json.loads(self.products[0].string)
+        myitems = myjson
+        for mydict in name_tree2_tag:
+            myitems = myitems[mydict]
+        myarti = myjson
+        for tag_arti in self.siteyml[self.name_site]["number_articles"].split(','):
+            myarti = myarti[tag_arti]
+        
+        mybrand = myjson
+        for tag_arti in self.siteyml[self.name_site]["brandlist"].split(','):
+            mybrand = mybrand[tag_arti]
+        for my in mybrand:
+            if my["id"] == 66:
+                mybrand = my['options']
+        mybranddict = dict()
+        for my in mybrand:
+            mybranddict[my['id']] = my['label']
+        
+        #print(mybranddict[10300])
+        #exit()
+
+        pageslist=["page=","p="]
+        i = 1
+
+        while len(myitems) != 0 and myarti > len(matox) :
+
+            if i > 1:
+                for page in pageslist:
+                    if page in self.URL:
+                        self.URL = re.sub(page+"[0-9]*", page + str(i), self.URL)
+                #print(self.URL)
+                #time.sleep(30)
+                if self.name_site == "deporvillage.fr":
+                    self.bs4WithJS()
+                else:
+                    self.response = requests.get(URL, headers=self.headers) #, allow_redirects=True)
+                    self.soup = bs4.BeautifulSoup(self.response.text, "html.parser")
+                self.products = self.soup.find_all(self.name_tree_tag[0], attrs={self.name_tree_tag[1]:self.name_tree_tag[2]})
+
+                myjson = json.loads(self.products[0].string)
+                myitems = myjson
+                for mydict in name_tree2_tag:
+                    myitems = myitems[mydict]
+
+            for kk in myitems:
+
+                if kk["defaultVariant"]["stockLabel"] == "NO_STOCK":
+                    myarti = myarti - 1
+                    continue
+                supermodelId = str(kk[self.siteyml[self.name_site]["id"]])
+                #marque=kk[self.siteyml[self.name_site]["marque_id"]]
+                marque=mybranddict[kk[self.siteyml[self.name_site]["marque_id"]]]
+                name=kk[self.siteyml[self.name_site]["name"]]
+                #print(name)
+                prix = kk
+                for mydict in self.siteyml[self.name_site]["price_sale"].split(','):
+                    prix = prix[mydict]
+                variations_tag = self.siteyml[self.name_site]["variations"].split(',')
+                variations = list()
+                #print(kk)
+                if kk[variations_tag[0]]:
+                    for kkk in kk[variations_tag[0]][0][variations_tag[1]]:
+                        variations.append(kkk[variations_tag[2]])
+                #print(variations)
+                url="https://" + self.name_site + kk[self.siteyml[self.name_site]["url"]]
+                #print(marque + " " + name + "-" + supermodelId)
+                matox[marque + " " + name + "-" + supermodelId] = {"marque":marque.lower(), "name":name.lower(), "prix":prix, "variations":variations, "name_search":name_search, "name_site":self.name_site, "fullname":marque.lower() + " " + name.lower(), "modelId":supermodelId, "url":url}
+
+            i = i + 1
+        #price_tag = self.siteyml[self.name_site]["price"].split(',')
+        #price_sale_tag = self.siteyml[self.name_site]["price_sale"].split(',')
+        #name_tag = self.siteyml[self.name_site]["name"].split(',')
+        #marque_tag = self.siteyml[self.name_site]["marque"].split(',')
+        #variations_tag = self.siteyml[self.name_site]["variations"].split(',')
+        #print(len(matox))
+        #print(matox)
+        #exit()
+
+        return matox
 
     def aliexpress(self,name_search): #Page multiples à gérer
         matox = dict()
@@ -204,10 +383,11 @@ class sites():
                 matox[marque + " " + name + "-" + supermodelId] = {"marque":marque.lower(), "name":name.lower(), "prix":prix, "variations":variations, "name_search":name_search, "name_site":self.name_site, "fullname":marque.lower() + " " + name.lower(), "modelId":supermodelId, "url":url}
         return matox
 
+    '''
     def interceptor(request):
         for headername,headervalue in self.headers.items():
             request.headers[headername] = headervalue
-
+    '''
     def generic(self,name_search):
         matox = dict()
         variations = ""
@@ -236,7 +416,7 @@ class sites():
                 number_pages = int(number_pages2.find_all(number_pages_key[3])[-2].find(number_pages_key[4]).contents[0])
             except: 
                 number_pages = 1
-                logging.info("No page found !")
+                logger.info("No page found !")
         else:
             number_pages = 1000
 
@@ -286,7 +466,7 @@ class sites():
                     m = re.search( r"""document\.getElementById\(\"URLNEXT\"\).value = \"(.*)\" ;""", str(self.soup) )
                     if m and m.group(1):
                         self.URL = 'https://www.culturevelo.com' + m.group(1)
-                logging.info("URL=" + str(self.URL))
+                logger.info("URL=" + str(self.URL))
                 self.response = requests.get(self.URL, headers=self.headers)
                 self.soup = bs4.BeautifulSoup(self.response.text, "html.parser")
                 self.products = self.soup.find_all(self.name_tree_tag[0], attrs={self.name_tree_tag[1]:self.name_tree_tag[2]})
@@ -302,7 +482,7 @@ class sites():
                 options = Options() 
                 options.add_argument("-headless")
                 driver = webdriver.Firefox(options=options)
-                driver.request_interceptor = self.interceptor
+                driver.request_interceptor # = self.interceptor
                 driver.get(self.URL)
 
                 html = driver.page_source
@@ -310,8 +490,8 @@ class sites():
                 self.products = self.soup.find_all(self.name_tree_tag[0], attrs={self.name_tree_tag[1]:self.name_tree_tag[2]})
 
             if not self.products:
-                logging.error("Error: No products found !")
-                logging.debug(self.response.text)
+                logger.error("Error: No products found !")
+                logger.debug(self.response.text)
                 #continue #exit()
                 break
 
@@ -331,13 +511,16 @@ class sites():
             'vtc électrique', 'vélo de course électrique', 'vélo de gravel', 'vélo de course', 'vtt électrique', 'vtt enfant', 'vtt trail/enduro', 'cross country', 'vtt trail/randonnée','vtt trail',
             'vtc électrique', 'vtc enfant','vtc','vtt']
 
+            logger.debug(len(self.products))
+            #exit()
+
             for product in self.products:
-                #logging.debug("product = " + str(product))
+                #logger.debug("product = " + str(product))
                 if self.name_site == "culturevelo.com" and "dalleconseil" in str(product):
                     continue
                 if len(marque_tag) > 1:
                     marque = self.trim_the_ends( product.find(marque_tag[0], attrs={marque_tag[1]:marque_tag[2]}) )
-                    #logging.debug(marque.contents)
+                    #logger.debug(marque.contents)
                     if self.name_site == "probikeshop.fr" or self.name_site == "alltricks.fr" and marque:
                         for marquee in marque:
                             marque = self.trim_the_ends(marquee)
@@ -379,7 +562,7 @@ class sites():
                     prix = self.trim_the_ends( prix.contents[len(prix)-1].contents[0]).encode('ascii','ignore').decode()
                 else:
                     prix = self.trim_the_ends( prix.contents[len(prix)-1] ).encode('ascii','ignore').decode()
-                logging.debug(prix)
+                #logger.debug(prix)
                 '''
                 if len(prix) == 1:
                     prix = self.trim_the_ends( prix.contents[0] ).encode('ascii','ignore').decode()
