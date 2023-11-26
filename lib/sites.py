@@ -515,7 +515,7 @@ class sites():
             #exit()
 
             for product in self.products:
-                logger.debug("product = " + str(product))
+                #logger.debug("product = " + str(product))
                 if self.name_site == "culturevelo.com" and "dalleconseil" in str(product):
                     continue
                 if len(marque_tag) > 1:
