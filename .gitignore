@@ -3,3 +3,4 @@ help
 old
 *.pyc
 dev/
+*.log
