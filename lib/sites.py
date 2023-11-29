@@ -74,7 +74,7 @@ class sites():
         self.URL = URL
         with open('config/site.yml', 'r') as file:
             self.siteyml = yaml.safe_load(file)
-        if self.name_site == "deporvillage.fr" or self.name_site == "alltricks.fr":
+        if self.name_site == "deporvillage.fr" or self.name_site == "alltricks.fr" or self.name_site == "intersport.fr" or self.name_site == "bike24.fr":
             self.bs4WithJS()
         else:
             self.response = requests.get(URL, headers=self.headers) #, allow_redirects=True)
@@ -188,9 +188,9 @@ class sites():
         driver = webdriver.Firefox(options=options)
         driver.request_interceptor #= self.interceptor
         driver.get(self.URL)
-        if self.name_site == "alltricks.fr":
+        if self.name_site == "alltricks.fr" or self.name_site == "intersport.fr":
             from selenium.webdriver.common.by import By
-            #from PIL import Image #pip install Pillow
+            from PIL import Image #pip install Pillow
             import time
             SCROLL_PAUSE_TIME = 10
             # Get scroll height
@@ -222,22 +222,25 @@ class sites():
                 # Calculate new scroll height and compare with last scroll height
                 new_height = driver.execute_script("return document.body.scrollHeight")
                 if new_height == last_height:
-                    #class="alltricks-Pager__Waypoint alltricks-Pager__Waypoint--WaitClick"
-                    #logger.debug( driver.find_element(By.CLASS_NAME, 'alltricks-Pager__Waypoint') )
-                    #driver.save_screenshot("image1.png")
-                    #print( driver.find_element(By.CLASS_NAME, 'alltricks-Pager__Waypoint--WaitClick') )
-                    try:
-                        #driver.find_element(By.CSS_SELECTOR, 'div.class.alltricks-Pager__Waypoint.alltricks-Pager__Waypoint--WaitClick')
-                        driver.find_element(By.CLASS_NAME, 'alltricks-Pager__Waypoint--WaitClick')
-                    #driver.find_elements(By.XPATH("//div[contains(@class, 'alltricks-Pager__Waypoint--WaitClick')]")):
-                    #if driver.find_element(By.CLASS_NAME, 'alltricks-Pager__Waypoint'):
+                    if self.name_site == "alltricks.fr":
+                        #class="alltricks-Pager__Waypoint alltricks-Pager__Waypoint--WaitClick"
+                        #logger.debug( driver.find_element(By.CLASS_NAME, 'alltricks-Pager__Waypoint') )
                         #driver.save_screenshot("image1.png")
-                        driver.find_element(By.CLASS_NAME, 'alltricks-Pager__Waypoint').click()
-                        logger.debug("Encore des produits")
-                        #driver.save_screenshot("image2.png")
-                    except:
+                        #print( driver.find_element(By.CLASS_NAME, 'alltricks-Pager__Waypoint--WaitClick') )
+                        try:
+                            #driver.find_element(By.CSS_SELECTOR, 'div.class.alltricks-Pager__Waypoint.alltricks-Pager__Waypoint--WaitClick')
+                            driver.find_element(By.CLASS_NAME, 'alltricks-Pager__Waypoint--WaitClick')
+                        #driver.find_elements(By.XPATH("//div[contains(@class, 'alltricks-Pager__Waypoint--WaitClick')]")):
+                        #if driver.find_element(By.CLASS_NAME, 'alltricks-Pager__Waypoint'):
+                            #driver.save_screenshot("image1.png")
+                            driver.find_element(By.CLASS_NAME, 'alltricks-Pager__Waypoint').click()
+                            logger.debug("Encore des produits")
+                            #driver.save_screenshot("image2.png")
+                        except:
+                            break
+                    elif self.name_site == "intersport.fr":
+                        driver.save_screenshot("image1.png")
                         break
-
                     #else:
                     #    break
                 last_height = new_height
@@ -467,10 +470,15 @@ class sites():
                     if m and m.group(1):
                         self.URL = 'https://www.culturevelo.com' + m.group(1)
                 logger.info("URL=" + str(self.URL))
-                self.response = requests.get(self.URL, headers=self.headers)
-                self.soup = bs4.BeautifulSoup(self.response.text, "html.parser")
+
+                if self.name_site == "bike24.fr":
+                    self.bs4WithJS()
+                else:
+                    self.response = requests.get(self.URL, headers=self.headers)
+                    self.soup = bs4.BeautifulSoup(self.response.text, "html.parser")
                 self.products = self.soup.find_all(self.name_tree_tag[0], attrs={self.name_tree_tag[1]:self.name_tree_tag[2]})
 
+            '''
             if self.name_site == "intersport.fr":
                 # apt install firefox-esr
                 from pyvirtualdisplay import Display
@@ -488,15 +496,15 @@ class sites():
                 html = driver.page_source
                 self.soup = bs4.BeautifulSoup(html, "html.parser")
                 self.products = self.soup.find_all(self.name_tree_tag[0], attrs={self.name_tree_tag[1]:self.name_tree_tag[2]})
+            '''
 
             if not self.products:
                 logger.error("Error: No products found !")
-                logger.debug(self.response.text)
+                #logger.debug(self.response.text)
                 #continue #exit()
                 break
 
             if i == 1 and self.name_site == "culturevelo.com":
-                import re
                 myproducts = self.soup.find_all()
                 #print(str(myproducts))
                 m = re.search( r"""document\.getElementById\("MAXPAGES"\)\.value \= \"([0-9]*)\"""", str(myproducts) )
@@ -524,7 +532,7 @@ class sites():
                     if self.name_site == "probikeshop.fr" or self.name_site == "alltricks.fr" and marque:
                         for marquee in marque:
                             marque = self.trim_the_ends(marquee)
-                    elif self.name_site == "bikester.fr" and marque:
+                    elif ( self.name_site == "bikester.fr" or self.name_site == "bike24.fr") and marque:
                         marque = self.trim_the_ends( product.find(marque_tag[0], attrs={marque_tag[1]:marque_tag[2]}).contents[0] )
                     elif self.name_site == "cyclable.com" and marque:
                         marque = self.trim_the_ends( marque.contents[1] ).text
@@ -533,6 +541,9 @@ class sites():
                         marque = self.trim_the_ends( product.find(marque_tag[0]).contents[0] )
                     else:
                         marque = "Inconnu" #Cas probikeshop
+
+                if self.name_site == "bike24.fr":
+                    marque = marque.lower().replace(" bikes", "")
 
                 if self.name_site == "culturevelo.com":
                     name = self.trim_the_ends( product.find(name_tag[0]).contents[0] )
@@ -560,6 +571,8 @@ class sites():
                 prix = product.find(price_tag[0], attrs={price_tag[1]:price_tag[2]})
                 if self.name_site == "alltricks.fr":
                     prix = self.trim_the_ends( prix.contents[len(prix)-1].contents[0]).encode('ascii','ignore').decode()
+                elif self.name_site == "bike24.fr":
+                    prix = self.trim_the_ends( prix.contents[len(prix)-2]).encode('ascii','ignore').decode()
                 else:
                     prix = self.trim_the_ends( prix.contents[len(prix)-1] ).encode('ascii','ignore').decode()
                 #logger.debug(prix)
@@ -569,7 +582,8 @@ class sites():
                 else:
                     prix = self.trim_the_ends( prix.contents[2] ).encode('ascii','ignore').decode()
                 '''
-                if prix == "PVC" or prix == "" or prix == "*" and price_sale_tag != "":
+                #print(prix)
+                if (prix == "PVC" or prix == "" or prix == "*") and price_sale_tag != "":
                     prix = self.trim_the_ends( product.find(price_sale_tag[0], attrs={price_sale_tag[1]:price_sale_tag[2]}).contents[0] )
                 if prix and type(prix) == str:
                     prix = self.trim_the_ends( prix )
@@ -625,14 +639,12 @@ class sites():
                     #print(str(supermodelId))
                     #print(supermodelId.prettify())
                     #print(supermodelId.value)
-                    import re
                     m = re.search( r"""data-gtm-productdata='({.*"\)"})'""", str(supermodelId) )
                     #print(m.group(1))
                     #print(json.loads(m.group(1)))
                     supermodelId = json.loads(m.group(1))["id"]
                 '''
                 if self.name_site == "bikester.fr":
-                    import re
                     '''
                     m = re.search( r"""data-gtm-productdata='({.*})' data-masterid=""", str(product) )
                     if m and m.group(1) and "id" in m.group(1):
@@ -660,7 +672,6 @@ class sites():
                         print(str(supermodelId) + " / " + url)
                     '''
                 if self.name_site == "probikeshop.fr":
-                    import re
                     link = product.find("a",attrs={"class":"product_link"})
                     m = re.search( r"""href="(.*)">""", str(link) )
                     if m and m.group(1):
@@ -671,8 +682,6 @@ class sites():
                     #exit()
 
                 if self.name_site == "alltricks.fr":
-                    import re
-
                     m = re.search( r"""href="(\/?\/?[^\s]+)">""", str(product) )
                     if m and m.group(1):
                         uri = m.group(1)
@@ -683,8 +692,6 @@ class sites():
                         supermodelId = m.group(1)
 
                 if self.name_site == "cyclable.com":
-                    import re
-
                     m = re.search( r"""data-id-product=\"([0-9]*)\" href=\"(\w+:\/?\/?[^\s]+)\"""", str(product) )
                     if m and m.group(2):
                         url = m.group(2)
@@ -694,7 +701,6 @@ class sites():
 
                 if self.name_site == "culturevelo.com":
                     
-                    import re
                     ''' product : 
                     * 10/11/2023 08h25:
                     <article class="dalle code-SA29FT7__220" id="dallep353544"><img alt="Moustache-Shop" class="marque" src="/shop/images/Logos/fit/Moustache-Shop.png"><p class="promotion-sticker">- 0%</p><p class="nouveaute-sticker">Nouveau</p><p class="flash-sticker">Un seul produit à ce prix</p><p class="top-sticker">Top</p><a href="/shop/moustache-samedi-29-trail-7-353544?source=ffrech&amp;recherche=" onclick="javascript:tracking.click('fr','gupii36lrd7tvb460qiqahkose','353544','353544','*','1','1','1','27','','');"><div class="visuel-produit"><img alt="VTT électrique Moustache SAMEDI 29 TRAIL 7 750Wh" class="prod-img lazy" data-src="https://static.cyclelab.eu/velos/moustache/2007/lowres/sa29ft7--220-samedi-29-trail-7-side-drivetrain-view-studio-1.jpg"/></div><h3>Moustache</h3><h4>Vtt électrique Moustache samedi 29 trail 7 750wh<span class="dispo" style="color:green">Disponible en ligne et en magasin</span></h4><div class="dalle-prix">6 899,00€</div></a></img></article>
@@ -709,6 +715,12 @@ class sites():
                     '''
                     uri = product.find('a').get('href')
                     url = "https://www." + self.name_site + uri
+
+                if self.name_site == "bike24.fr":
+                    m = re.search( r"""div .* data-product='{\"id\":([0-9]+)}""", str(product) )
+                    if m and m.group(1):
+                        supermodelId = m.group(1)
+                    url = "https://www." + self.name_site + '/produits/' + supermodelId
 
                 if supermodelId != "" and marque:
                     if url and url != "":

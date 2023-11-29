@@ -91,3 +91,14 @@ deporvillage.fr:
   price: "defaultVariant,price,pvp"
   price_sale: "defaultVariant,price,price"
   variations: "variants,items,name" # : stockLabel (FULLSTOCK ?)
+bike24.fr:
+  name_tree: "div,class,product-tile__container"
+  price: "p,class,price__value"
+  price_sale: ""
+  name: "div,class,product-tile__title"
+  marque: "p,class,product-tile__brand product-tile__text"
+  variations: "div,class,delivery-message delivery-message--success delivery-message--large product-tile__delivery-message-wrapper"
+  number_articles: "" #"div,class,product-sorting-bar__offers"
+  number_pages: ""
+  #id: "div,data-product,id"
+  #url: "a,class,product-tile__anchor"
