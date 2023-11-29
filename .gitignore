@@ -1,0 +1,6 @@
+config.yml
+help
+old
+*.pyc
+dev/
+*.log
