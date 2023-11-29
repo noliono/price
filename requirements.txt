@@ -1,0 +1,10 @@
+elasticsearch
+pyyaml
+requests
+bs4
+Mastodon.py
+discord_webhook
+pytz
+pyvirtualdisplay
+selenium-wire
+Pillow
