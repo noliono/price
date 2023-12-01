@@ -6,7 +6,7 @@ import logging
 import logging.handlers
 import random
 import re
-#import time
+import time
 #import unidecode
 from pyvirtualdisplay import Display
 #from selenium import webdriver
@@ -191,7 +191,6 @@ class sites():
         if self.name_site == "alltricks.fr" or self.name_site == "intersport.fr":
             from selenium.webdriver.common.by import By
             from PIL import Image #pip install Pillow
-            import time
             SCROLL_PAUSE_TIME = 10
             # Get scroll height
             last_height = driver.execute_script("return document.body.scrollHeight")
@@ -244,6 +243,8 @@ class sites():
                     #else:
                     #    break
                 last_height = new_height
+        else: #elif self.name_site == "bike24.fr" :
+            time.sleep(2)
         
         html = driver.page_source
 
