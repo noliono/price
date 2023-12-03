@@ -247,7 +247,7 @@ class sites():
             time.sleep(5)
         
         html = driver.page_source
-
+        display.stop()
         del driver.request_interceptor
         del driver.response_interceptor
         driver.close()
