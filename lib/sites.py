@@ -244,7 +244,7 @@ class sites():
                     #    break
                 last_height = new_height
         else: #elif self.name_site == "bike24.fr" :
-            time.sleep(2)
+            time.sleep(5)
         
         html = driver.page_source
 
