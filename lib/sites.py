@@ -248,9 +248,9 @@ class sites():
         
         html = driver.page_source
 
-        driver.close()
         del driver.request_interceptor
         del driver.response_interceptor
+        driver.close()
 
         self.soup = bs4.BeautifulSoup(html, "html.parser") 
 
