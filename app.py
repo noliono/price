@@ -92,7 +92,7 @@ def PrintableMatoDiscord(mato):
     PrintableMato +=  " ## " + str(mato["prix"])  + " -> " + str(mato["newprix"])
     return PrintableMato
 
-def fetchwebsite():
+def fetchwebsite_old():
     matoxx = dict()
     for name_search,URL in configyml["tosurvey"].items():
         name_site = urlparse(URL).netloc.replace("www.","")
@@ -113,6 +113,21 @@ def fetchwebsite():
         if matox: matoxx.update(matox)
     return matoxx
 
+def fetchwebsite(name_search,URL):
+    name_site = urlparse(URL).netloc.replace("www.","")
+    logger.info("name site = " + name_site + " / name_search=" + name_search + " / URL=" + URL)
+    matox = dict()
+    if name_site == "decathlon.fr":
+        matox = sites.sites(URL,name_site).decathlon(name_search)
+    elif name_site == "fr.aliexpress.com":
+        matox = sites.sites(URL,name_site).aliexpress(name_search)
+    elif name_site == "deporvillage.fr":
+        matox = sites.sites(URL,name_site).parsejson(name_search)
+    else:
+        matox = sites.sites(URL,name_site).generic(name_search)
+    logger.debug(matox)
+    return matox
+
 parser = argparse.ArgumentParser()
 parser.add_argument('--send',
                     help='Send price change by masto or/and mail')
@@ -122,16 +137,19 @@ parser.add_argument('--storeelastic', action=argparse.BooleanOptionalAction)
 parser.set_defaults(storeelastic=True)
 
 args = parser.parse_args()
-#print(args)
-#exit()
 
 subject="Evolution prix"
 
-if args.fetchwebsite:
-    matox = fetchwebsite()
-if args.storeelastic and matox:
-    matox = searchelastic(matox)
-    addtoelastic(matox)
+matox = dict()
+for name_search,URL in configyml["tosurvey"].items():
+    try:
+        if args.fetchwebsite:
+            matox = fetchwebsite(name_search,URL)
+        if args.storeelastic and matox:
+            matox = searchelastic(matox)
+            addtoelastic(matox)
+    except:
+        logger.error(f"Trouble with : {name_search} / {URL}")
 
 ################################### Change détection and send mail
 
