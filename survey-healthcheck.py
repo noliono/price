@@ -1,7 +1,14 @@
 import yaml
 from elasticsearch import Elasticsearch
+import argparse
 
-with open('config/config.yml', 'r') as file:
+parser = argparse.ArgumentParser()
+parser.add_argument('--configfile')
+parser.set_defaults(configfile='velo')
+
+args = parser.parse_args()
+
+with open(f"config/config-{args.configfile}.yml", 'r') as file:
     configyml = yaml.safe_load(file)
 
 searchsite = list()
