@@ -13,8 +13,8 @@ from pyvirtualdisplay import Display
 from seleniumwire import webdriver
 from selenium.webdriver.firefox.options import Options 
 
-with open('config/config.yml', 'r') as file:
-    configyml = yaml.safe_load(file)
+#with open('config/config.yml', 'r') as file:
+#    configyml = yaml.safe_load(file)
 
 #logging.basicConfig(filename="/logs/app.log",level=configyml["level"])
 #logging.basicConfig(filename="/logs/app.log",level="DEBUG")
@@ -23,7 +23,7 @@ logging.getLogger("elastic_transport").setLevel(logging.ERROR)
 logging.getLogger("seleniumwire").setLevel(logging.ERROR)
 
 # Creates the log handler in case the default move does not work
-handler = logging.handlers.RotatingFileHandler("/logs/app.log",maxBytes=2000000, backupCount=5)
+handler = logging.handlers.RotatingFileHandler("/logs/sites.log",maxBytes=2000000, backupCount=5)
 handler.setFormatter(logging.Formatter(u'%(asctime)s %(levelname)-s -- %(module)s:%(lineno)d - %(message)s'))
 
 # Creates the logger
