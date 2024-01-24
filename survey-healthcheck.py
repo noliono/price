@@ -41,5 +41,5 @@ for site in searchsite:
 if missing:
     from discord_webhook import DiscordWebhook, DiscordEmbed 
     urllog = "https://discordapp.com/api/webhooks/1093862613869404310/nCxY36jJCzzltRxp1w9WHQW1CW3bVEGZabEmXCtst2aHkHHAlOnMacjQLN5TB9g1VNWq"
-    webhook = DiscordWebhook(url=urllog, content="Missing = " + (" / ").join(missing))
+    webhook = DiscordWebhook(url=urllog, content=f"{args.configfile} : Missing = " + (" / ").join(missing))
     response = webhook.execute()
