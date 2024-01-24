@@ -11,29 +11,6 @@ from lib import sites
 import argparse
 import json
 
-
-with open('config/config.yml', 'r') as file:
-    configyml = yaml.safe_load(file)
-
-#logging.basicConfig(filename="/logs/app.log",level=configyml["level"])
-logging.getLogger("urllib3").setLevel(logging.ERROR)
-logging.getLogger("elastic_transport").setLevel(logging.ERROR)
-
-# Creates the log handler in case the default move does not work
-handler = logging.handlers.RotatingFileHandler("/logs/app.log",maxBytes=2000000, backupCount=5)
-handler.setFormatter(logging.Formatter(u'%(asctime)s %(levelname)-s -- %(module)s:%(lineno)d - %(message)s'))
-
-# Creates the logger
-logger = logging.getLogger("prix-app")
-logger.setLevel(configyml["level"])
-logger.addHandler(handler)
-
-logger.info("################ Script start #################################")
-
-ELASTIC_NODES = configyml["elastic"]["nodes"]
-if not configyml["elastic"]["apiid"]:
-    es = Elasticsearch(ELASTIC_NODES)
-
 def addtoelastic(matox):
     elasticindexMonth = configyml["elastic"]["index"] + "-" + datetime.now().strftime("%Y.%m")
     #for key,mato in matox.items():
@@ -135,8 +112,33 @@ parser.add_argument('--fetchwebsite', action=argparse.BooleanOptionalAction)
 parser.set_defaults(fetchwebsite=True)
 parser.add_argument('--storeelastic', action=argparse.BooleanOptionalAction)
 parser.set_defaults(storeelastic=True)
+parser.add_argument('--configfile')
+parser.set_defaults(configfile='velo')
 
 args = parser.parse_args()
+
+with open(f"config/config-{args.configfile}.yml", 'r') as file:
+    configyml = yaml.safe_load(file)
+
+#logging.basicConfig(filename="/logs/app.log",level=configyml["level"])
+logging.getLogger("urllib3").setLevel(logging.ERROR)
+logging.getLogger("elastic_transport").setLevel(logging.ERROR)
+
+# Creates the log handler in case the default move does not work
+handler = logging.handlers.RotatingFileHandler(f"/logs/app-{args.configfile}.log",maxBytes=2000000, backupCount=5)
+handler.setFormatter(logging.Formatter(u'%(asctime)s %(levelname)-s -- %(module)s:%(lineno)d - %(message)s'))
+
+# Creates the logger
+logger = logging.getLogger("prix-app")
+logger.setLevel(configyml["level"])
+logger.addHandler(handler)
+
+logger.info("################ Script start #################################")
+
+ELASTIC_NODES = configyml["elastic"]["nodes"]
+if not configyml["elastic"]["apiid"]:
+    es = Elasticsearch(ELASTIC_NODES)
+
 
 subject="Evolution prix"
 
