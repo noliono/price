@@ -17,6 +17,7 @@ discord:
   vtt: <web hook url>
   cargo: <web hook url>
   default: <web hook url>
+  url-log: <web hook url>
 level: INFO
 tosurvey:
  deporvillage-vtt: https://www.deporvillage.fr/velos-vtt:en_stock?p=1
