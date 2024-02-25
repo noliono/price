@@ -94,7 +94,7 @@ def fetchwebsite(name_search,URL):
     name_site = urlparse(URL).netloc.replace("www.","")
     logger.info("name site = " + name_site + " / name_search=" + name_search + " / URL=" + URL)
     matox = dict()
-    if name_site == "decathlon.fr":
+    if name_site == "decathlon.fr" or name_site == "decathlon.be":
         matox = sites.sites(URL,name_site).decathlon(name_search)
     elif name_site == "fr.aliexpress.com":
         matox = sites.sites(URL,name_site).aliexpress(name_search)
@@ -144,14 +144,14 @@ subject="Evolution prix"
 
 matox = dict()
 for name_search,URL in configyml["tosurvey"].items():
-    try:
-        if args.fetchwebsite:
-            matox = fetchwebsite(name_search,URL)
-        if args.storeelastic and matox:
-            matox = searchelastic(matox)
-            addtoelastic(matox)
-    except:
-        logger.error(f"Trouble with : {name_search} / {URL}")
+#    try:
+    if args.fetchwebsite:
+        matox = fetchwebsite(name_search,URL)
+    if args.storeelastic and matox:
+        matox = searchelastic(matox)
+        addtoelastic(matox)
+#    except:
+#        logger.error(f"Trouble with : {name_search} / {URL}")
 
 ################################### Change détection and send mail
 
@@ -330,7 +330,8 @@ if args.send:
                 webhook.add_embed(embed)
                 response = webhook.execute()
                 time.sleep(1)
-        urllog = "https://discordapp.com/api/webhooks/1093862613869404310/nCxY36jJCzzltRxp1w9WHQW1CW3bVEGZabEmXCtst2aHkHHAlOnMacjQLN5TB9g1VNWq"
+        #urllog = "https://discordapp.com/api/webhooks/1093862613869404310/nCxY36jJCzzltRxp1w9WHQW1CW3bVEGZabEmXCtst2aHkHHAlOnMacjQLN5TB9g1VNWq"
+        urllog = configyml["discord"]["url-log"]
         webhook = DiscordWebhook(url=urllog, content=f"{args.configfile} : Found " + str(len(content.split("##"))-1) + " new price")
         response = webhook.execute()
 

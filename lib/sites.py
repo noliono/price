@@ -115,10 +115,16 @@ class sites():
             #print(json.dumps(datas))
             #print(json.dumps(datas[5]["data"]["blocks"]["items"]))
             #exit()
-            if "data" in datas[5] and "blocks" in datas[5]["data"]:
-                items = datas[5]["data"]["blocks"]["items"]
-            else:
-                items=[]
+            items = list()
+            for data in datas:
+                if 'id' in data and 'SupermodelListing' in data['id']:
+                    items = data["data"]["blocks"]["items"]
+            ''' Previous method
+            #if "data" in datas[5] and "blocks" in datas[5]["data"]:
+            #    items = datas[5]["data"]["blocks"]["items"]
+            #else:
+            #    items=[]
+            '''
 
             while len(items) != 0 and len(self.products[0].contents) != 0:
 
@@ -136,7 +142,7 @@ class sites():
                             name = ""
                         prix = kkk["price"]
                         variations = kkk["availableSizes"]
-                        url = "https://" + self.name_site + "/" + kkk["url"]
+                        url = "https://" + self.name_site + "/fr/" + kkk["url"]
                         matox[marque + " " + name + "-" + supermodelId] = {"marque":marque.lower(), "name":name.lower(), "prix":prix, "variations":variations, "name_search":name_search, "name_site":self.name_site, "fullname":marque.lower() + " " + name.lower(), "modelId":supermodelId, "url":url}
 
                 pattern = re.compile(r"from=(\d+)&size=(\d+)")
@@ -154,10 +160,15 @@ class sites():
                 if len(self.products) != 0:
                     #datas = json.loads(self.products[0].contents[0])["_ctx"]["data"]
                     datas = json.loads(self.products[0].contents[0].replace("__DKT = ",""))["_ctx"]["data"]
+                    for data in datas:
+                        if 'id' in data and 'SupermodelListing' in data['id']:
+                            items = data["data"]["blocks"]["items"]
+                    ''' Previous method
                     if "data" in datas[5] and "blocks" in datas[5]["data"]:
                         items = datas[5]["data"]["blocks"]["items"]
                     else:
                         items=[]
+                    '''
                 
                 #print(items)
 
