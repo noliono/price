@@ -488,7 +488,11 @@ class sites():
                 else:
                     self.response = requests.get(self.URL, headers=self.headers)
                     self.soup = bs4.BeautifulSoup(self.response.text, "html.parser")
-                self.products = self.soup.find_all(self.name_tree_tag[0], attrs={self.name_tree_tag[1]:self.name_tree_tag[2]})
+                if self.name_site == "barracuda.be":
+                    self.products = self.soup.find_all(self.name_tree_tag[0], {self.name_tree_tag[1]: re.compile(self.name_tree_tag[2]+'.*')})
+                else:
+                    self.products = self.soup.find_all(self.name_tree_tag[0], attrs={self.name_tree_tag[1]:self.name_tree_tag[2]})
+                
 
             '''
             if self.name_site == "intersport.fr":
@@ -536,6 +540,7 @@ class sites():
 
             for product in self.products:
                 #logger.debug("product = " + str(product))
+                #print("product = " + str(product))
                 if self.name_site == "culturevelo.com" and "dalleconseil" in str(product):
                     continue
                 if len(marque_tag) > 1:
@@ -553,6 +558,9 @@ class sites():
                         marque = self.trim_the_ends( product.find(marque_tag[0]).contents[0] )
                     else:
                         marque = "Inconnu" #Cas probikeshop
+
+                if self.name_site == "barracuda.be":
+                    marque = marque.get('alt')
 
                 if self.name_site == "bike24.fr":
                     marque = marque.lower().replace(" bikes", "")
@@ -585,6 +593,8 @@ class sites():
                     prix = self.trim_the_ends( prix.contents[len(prix)-1].contents[0]).encode('ascii','ignore').decode()
                 elif self.name_site == "bike24.fr":
                     prix = self.trim_the_ends( prix.contents[len(prix)-2]).encode('ascii','ignore').decode()
+                elif self.name_site == "barracuda.be":
+                    prix = self.trim_the_ends( prix.contents[0]).encode('ascii','ignore').decode()
                 else:
                     prix = self.trim_the_ends( prix.contents[len(prix)-1] ).encode('ascii','ignore').decode()
                 #logger.debug(prix)
@@ -628,7 +638,7 @@ class sites():
                         variations = self.remove_blank_list( self.trim_the_ends(variations.contents[0]).split(",") )
                 #if variations != "":
                 #    matox[marque + " " + name] = {"marque":marque, "name":name, "prix":prix, "variations":variations, "name_search":name_search, "name_site":name_site, "fullname":marque + " " + name}
-                if self.name_site == "alltricks.fr" or self.name_site == "culturevelo.com":
+                if self.name_site == "alltricks.fr" or self.name_site == "culturevelo.com" or self.name_site == "barracuda.be":
                     #print(product)
                     variations_temp = product.find_all(variations_tag[0], attrs={variations_tag[1]:variations_tag[2]})
                     #print(variations_temp)
@@ -641,6 +651,9 @@ class sites():
                     elif self.name_site == "alltricks.fr":
                         for variation in variations_temp:
                             variationlist.append(variation.contents[0])
+                    elif self.name_site == "barracuda.be":
+                        for var_span in variations_temp[0].find_all('span'):
+                            variationlist.append( self.trim_the_ends( var_span.contents[0] ) )
                     variations = variationlist
                 supermodelId = ""
                 '''
@@ -734,6 +747,16 @@ class sites():
                         supermodelId = m.group(1)
                     url = "https://www." + self.name_site + '/produits/' + supermodelId
 
+                if self.name_site == "barracuda.be":
+                    #m = re.search( r"""^.*\((.+)\).*$""", name )
+                    m = re.search( r"""^.*\((.*\d.*)\).*$""", name )
+                    if m and m.group(0):
+                        supermodelId = m.group(1)
+                    #print(name)
+                    #print(supermodelId)
+                    #exit()
+                    url = product.find("a", attrs={"class":"product_card_link"}).get('href')
+
                 if supermodelId != "" and marque:
                     if url and url != "":
                         matox[marque + " " + name + "-" + supermodelId] = {"marque":marque.lower(), "name":name.lower(), "prix":prix, "variations":variations, "name_search":name_search, "name_site":self.name_site, "fullname":marque.lower() + " " + name.lower(), "modelId":supermodelId, "url":url}
@@ -756,6 +779,17 @@ class sites():
             #if i == 6:
             #    print(str(matox))
             
+            #print( self.soup.find('div', attrs={'class':re.compile('pagination_ps.*')}) )
+            #print( self.soup.find('div', attrs={'id':'pagination_bottom'}).contents[0].replace('\n','') )
+            #print( self.soup.find('div', attrs={'id':'pagination_bottom'}).find("ul", recursive=False)  )
+            #exit()
+            if self.name_site == "barracuda.be" and self.soup.find('div', attrs={'id':'pagination_bottom'}).find("ul", recursive=False) is None:
+                break
+
+            if self.name_site == "barracuda.be" and self.soup.find('div', attrs={'class':re.compile('pagination_ps.*')}) and self.soup.find('li', attrs={'class':'disabled pagination_next'}):
+            #if self.name_site == "barracuda.be" and product.find('li', attrs={'class':'disabled pagination_next'}):
+                break
+
             if i > 200:
                 break
 
