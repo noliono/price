@@ -105,12 +105,13 @@ bike24.fr:
 decathlon.be:
   name_tree: "script,id,__dkt"
 barracuda.be:
-  name_tree: "ul,id,product_new_list"
+  name_tree: "li,class,new_item" # ajax_block_product" #"ul,id,product_new_list"
   price: "span,class,price"
   price_sale: ""
   name: "a,class,"
-  marque: ""
-  id: ""
-  variations: "div,class,attr_info_container"
-  number_articles: ""
+  marque: "img,class,product_brand"
+  id: "" #A compléter
+  url: "" #"a,class,product_card_link"
+  variations: "div,class,attr_info_container" #plus complexe que ça ! #A compléter
+  number_articles: "" #"a,data-rel,"
   number_pages: ""
