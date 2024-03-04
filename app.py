@@ -125,14 +125,14 @@ subject="Evolution prix"
 
 matox = dict()
 for name_search,URL in configyml["tosurvey"].items():
-     try:
+    try:
         if args.fetchwebsite:
             matox = fetchwebsite(name_search,URL)
         if args.storeelastic and matox:
             matox = searchelastic(matox)
             addtoelastic(matox)
-     except:
-         logger.error(f"Trouble with : {name_search} / {URL}")
+    except:
+        logger.error(f"Trouble with : {name_search} / {URL}")
 
 ################################### Change détection and send mail
 
