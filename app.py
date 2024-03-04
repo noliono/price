@@ -69,27 +69,6 @@ def PrintableMatoDiscord(mato):
     PrintableMato +=  " ## " + str(mato["prix"])  + " -> " + str(mato["newprix"])
     return PrintableMato
 
-def fetchwebsite_old():
-    matoxx = dict()
-    for name_search,URL in configyml["tosurvey"].items():
-        name_site = urlparse(URL).netloc.replace("www.","")
-        logger.info("name site = " + name_site + " / name_search=" + name_search + " / URL=" + URL)
-        matox = dict()
-        if name_site == "decathlon.fr":
-            matox = sites.sites(URL,name_site).decathlon(name_search)
-            #addtoelastic(matox)
-            #logger.debug(matox)
-            #continue
-        elif name_site == "fr.aliexpress.com":
-            matox = sites.sites(URL,name_site).aliexpress(name_search)
-        elif name_site == "deporvillage.fr":
-            matox = sites.sites(URL,name_site).parsejson(name_search)
-        else:
-            matox = sites.sites(URL,name_site).generic(name_search)
-        logger.debug(matox)
-        if matox: matoxx.update(matox)
-    return matoxx
-
 def fetchwebsite(name_search,URL):
     name_site = urlparse(URL).netloc.replace("www.","")
     logger.info("name site = " + name_site + " / name_search=" + name_search + " / URL=" + URL)
@@ -100,6 +79,8 @@ def fetchwebsite(name_search,URL):
         matox = sites.sites(URL,name_site).aliexpress(name_search)
     elif name_site == "deporvillage.fr":
         matox = sites.sites(URL,name_site).parsejson(name_search)
+    elif name_site == "velophil.be":
+        matox = sites.sites(URL,name_site).parsejson_velophil(name_search)
     else:
         matox = sites.sites(URL,name_site).generic(name_search)
     logger.debug(matox)

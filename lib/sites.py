@@ -80,8 +80,10 @@ class sites():
             self.response = requests.get(URL, headers=self.headers) #, allow_redirects=True)
             self.soup = bs4.BeautifulSoup(self.response.text, "html.parser")
         self.name_tree_tag = self.siteyml[name_site]["name_tree"].split(',')
-        self.products = self.soup.find_all(self.name_tree_tag[0], attrs={self.name_tree_tag[1]:self.name_tree_tag[2]})
-        #self.products = self.soup.find_all("script")
+        if self.name_site == "velophil.be":
+            self.products = self.soup.find_all( self.name_tree_tag[0] )#"script")
+        else:
+            self.products = self.soup.find_all(self.name_tree_tag[0], attrs={self.name_tree_tag[1]:self.name_tree_tag[2]})
 
     def trim_the_ends(self,x):
         """
@@ -354,6 +356,188 @@ class sites():
 
         return matox
 
+    def parsejson_velophil(self,name_search):
+        matox = dict()
+
+        #print( self.products )
+        #exit()
+
+        for product in self.products:
+            if '{"collection":{"id":' in str(product):
+                json1 = product
+                #print(product)
+            elif '{"products":[{"id"' in str(product):
+                #print( product )
+                #print("#############")
+                json2 = product
+                #break
+        
+        #print(json1)
+        match = re.search(r'"collection_viewed", (\{.*\})\);', str(json1) )
+
+        data1 = ''
+        data2 = ''
+
+        if match:
+            json_data = match.group(1)
+            # Convertir la chaîne JSON en un objet Python
+            #print(json_data)
+            data1 = json.loads(json_data)
+            #print(data)
+        else:
+            print("Aucune correspondance trouvée.")
+
+        #print(data1)
+
+        match = re.search(r'var meta = (\{.*\});', str(json2))
+
+        if match:
+            json_data = match.group(1)
+            # Convertir la chaîne JSON en un objet Python
+            #print(json_data)
+            data2 = json.loads(json_data)
+            #print(data)
+        else:
+            print("Aucune correspondance trouvée.")
+        
+        if self.siteyml[self.name_site]["number_articles"]:
+            number_articles = self.siteyml[self.name_site]["number_articles"].split(',')
+
+        number_articles = int(self.trim_the_ends(self.soup.find(number_articles[0], attrs={number_articles[1]:number_articles[2]}).contents[0].replace('produits','')))
+        #print('/' + str(number_articles) + '/')
+
+        pageslist=["page=","p="]
+        i = 1
+
+        #print(len(data1['collection']['productVariants']))
+
+        while len(data1['collection']['productVariants']) != 0 and number_articles > len(matox) :
+            print( f"{len(data1['collection']['productVariants'])} / {number_articles} / {len(matox)}" )
+            if i > 1:
+                for page in pageslist:
+                    if page in self.URL:
+                        self.URL = re.sub(page+"[0-9]*", page + str(i), self.URL)
+
+                self.response = requests.get(self.URL, headers=self.headers) #, allow_redirects=True)
+                logger.info("URL=" + str(self.URL))
+                self.soup = bs4.BeautifulSoup(self.response.text, "html.parser")
+
+                #self.products = self.soup.find_all(self.name_tree_tag[0], attrs={self.name_tree_tag[1]:self.name_tree_tag[2]})
+                self.products = self.soup.find_all(self.name_tree_tag[0])
+
+                for product in self.products:
+                    if '{"collection":{"id":' in str(product):
+                        json1 = product
+                        #print(product)
+                    elif '{"products":[{"id"' in str(product):
+                        #print( product )
+                        #print("#############")
+                        json2 = product
+                        #break
+                
+                #print(json1)
+                match = re.search(r'"collection_viewed", (\{.*\})\);', str(json1) )
+
+                data1 = ''
+                data2 = ''
+
+                if match:
+                    json_data = match.group(1)
+                    # Convertir la chaîne JSON en un objet Python
+                    #print(json_data)
+                    data1 = json.loads(json_data)
+                    #print(data)
+                else:
+                    print("Aucune correspondance trouvée.")
+
+                #print(data1)
+
+                match = re.search(r'var meta = (\{.*\});', str(json2))
+
+                if match:
+                    json_data = match.group(1)
+                    # Convertir la chaîne JSON en un objet Python
+                    #print(json_data)
+                    data2 = json.loads(json_data)
+                    #print(data)
+                else:
+                    print("Aucune correspondance trouvée.")
+
+            #for kk in data['products']:
+            for kk in data1['collection']['productVariants']:
+
+                supermodelId = kk['product']['id']
+                marque = kk['product']['vendor']
+                prix = kk['price']['amount']
+                url="https://" + self.name_site + kk['product']['url']
+                name = kk['product']['title']
+                variations = list()
+                for variant in data2['products']:
+                    #print(f"{variant['id']} / {supermodelId}")
+                    if int(variant['id']) == int(supermodelId):
+                        for var in variant['variants']:
+                            variations.append(var['public_title'])
+                '''
+                {
+                "id": 42810259407007,
+                "price": 197900,
+                "name": "Croix de Fer 20 - M / Dark Blue",
+                "public_title": "M / Dark Blue",
+                "sku": ""
+                }
+                '''
+                
+                '''
+                supermodelId = kk['id']
+                marque = kk['vendor']
+                prix = kk['variants'][0]['price']
+                url="https://" + self.name_site + kk['gid'].replace('gid:/','')
+                name = ''
+                if '/' in kk['variants'][0]['name']:
+                    name = kk['variants'][0]['name'].split(' / ')[0]
+                elif '-' in kk['variants'][0]['name']:
+                    name = kk['variants'][0]['name'].split(' - ')[0]
+                else:
+                    name = kk['variants'][0]['name']
+                variations = list()
+                for variant in kk['variants']:
+                    if '/' in variant['name']:
+                        #print(variant)
+                        variations.append(variant['name'].split(' / ')[1])
+                    elif '-' in variant['name']:
+                        variations.append(variant['name'].split(' - ')[1])
+                '''
+                print( f"{supermodelId} / {marque} / {prix} / {name} / {variations} / {url}" )
+
+                '''
+                if kk["defaultVariant"]["stockLabel"] == "NO_STOCK":
+                    myarti = myarti - 1
+                    continue
+                supermodelId = str(kk[self.siteyml[self.name_site]["id"]])
+                #marque=kk[self.siteyml[self.name_site]["marque_id"]]
+                marque=mybranddict[kk[self.siteyml[self.name_site]["marque_id"]]]
+                name=kk[self.siteyml[self.name_site]["name"]]
+                #print(name)
+                prix = kk
+                for mydict in self.siteyml[self.name_site]["price_sale"].split(','):
+                    prix = prix[mydict]
+                variations_tag = self.siteyml[self.name_site]["variations"].split(',')
+                variations = list()
+                #print(kk)
+                if kk[variations_tag[0]]:
+                    for kkk in kk[variations_tag[0]][0][variations_tag[1]]:
+                        variations.append(kkk[variations_tag[2]])
+                #print(variations)
+                url="https://" + self.name_site + kk[self.siteyml[self.name_site]["url"]]
+                #print(marque + " " + name + "-" + supermodelId)
+                matox[marque + " " + name + "-" + supermodelId] = {"marque":marque.lower(), "name":name.lower(), "prix":prix, "variations":variations, "name_search":name_search, "name_site":self.name_site, "fullname":marque.lower() + " " + name.lower(), "modelId":supermodelId, "url":url}
+                '''
+                matox[marque + " " + name + "-" + supermodelId] = {"marque":marque.lower(), "name":name.lower(), "prix":prix, "variations":variations, "name_search":name_search, "name_site":self.name_site, "fullname":marque.lower() + " " + name.lower(), "modelId":supermodelId, "url":url}
+
+            i = i + 1
+
+        return matox
+
     def aliexpress(self,name_search): #Page multiples à gérer
         matox = dict()
         print(self.products)
@@ -413,18 +597,23 @@ class sites():
         marque_tag = self.siteyml[self.name_site]["marque"].split(',')
         variations_tag = self.siteyml[self.name_site]["variations"].split(',')
         if self.siteyml[self.name_site]["number_articles"]:
+        #if 'number_articles' in self.siteyml[self.name_site]:
             number_articles = self.siteyml[self.name_site]["number_articles"].split(',')
             if self.name_site == "probikeshop.fr":
                 if not self.soup.find(number_articles[0], attrs={number_articles[1]:number_articles[2]}) is None:
                     number_articles = int(self.soup.find(number_articles[0], attrs={number_articles[1]:number_articles[2]})["value"])
                 else:
                     return None
+            # elif self.name_site == "velophil.be":
+            #     number_articles = int(self.trim_the_ends(self.soup.find(number_articles[0], attrs={number_articles[1]:number_articles[2]}).contents[0].replace('produits','')))
+            #     #print('/' + str(number_articles) + '/')
             else:
                 number_articles = int(self.trim_the_ends(self.soup.find(number_articles[0], attrs={number_articles[1]:number_articles[2]}).contents[0].replace("Articles","")).replace(".",""))
         else:
             number_articles = 100000 #1
 
         if self.siteyml[self.name_site]["number_pages"]:
+        #if 'number_pages' in self.siteyml[self.name_site]:
             number_pages_key = self.siteyml[self.name_site]["number_pages"].split(',')
             number_pages2 = self.soup.find(number_pages_key[0],attrs={number_pages_key[1]:number_pages_key[2]})
             try:
@@ -434,6 +623,9 @@ class sites():
                 logger.info("No page found !")
         else:
             number_pages = 1000
+
+        if self.name_site == "velodege.eu":
+            number_articles = len(self.products)
 
         i = 1
         alea = 3
@@ -535,12 +727,14 @@ class sites():
             'vtc électrique', 'vélo de course électrique', 'vélo de gravel', 'vélo de course', 'vtt électrique', 'vtt enfant', 'vtt trail/enduro', 'cross country', 'vtt trail/randonnée','vtt trail',
             'vtc électrique', 'vtc enfant','vtc','vtt']
 
-            logger.debug(len(self.products))
+            #logger.debug(len(self.products))
             #exit()
 
             for product in self.products:
                 #logger.debug("product = " + str(product))
                 #print("product = " + str(product))
+                supermodelId = ""
+
                 if self.name_site == "culturevelo.com" and "dalleconseil" in str(product):
                     continue
                 if len(marque_tag) > 1:
@@ -553,6 +747,10 @@ class sites():
                         marque = self.trim_the_ends( product.find(marque_tag[0], attrs={marque_tag[1]:marque_tag[2]}).contents[0] )
                     elif self.name_site == "cyclable.com" and marque:
                         marque = self.trim_the_ends( marque.contents[1] ).text
+                    # elif self.name_site == "velophil.be" and marque:
+                    #     #logger.debug( marque.contents[0] )
+                    #     marque = self.trim_the_ends( marque.contents[0] )
+                    #     #print( marque )
                 else:
                     if self.name_site == "culturevelo.com":
                         marque = self.trim_the_ends( product.find(marque_tag[0]).contents[0] )
@@ -567,9 +765,20 @@ class sites():
 
                 if self.name_site == "culturevelo.com":
                     name = self.trim_the_ends( product.find(name_tag[0]).contents[0] )
+                # elif self.name_site == "velophil.be":
+                #     name = self.trim_the_ends( product.find(name_tag[0], attrs={name_tag[1]:re.compile(name_tag[2])}).contents[0] )
+                #     #print(name)
+                elif self.name_site == "velodege.eu":
+                    proddd = product.find(name_tag[0], attrs={name_tag[1]:name_tag[2]})
+                    url = proddd.find('a').get('href')
+                    #print(url)
+                    name = proddd.contents[0].find('a').contents[0]
+                    supermodelId = product.find('a', attrs={'class':'mf-product-quick-view'}).get('data-id') 
+                    #print(name)
                 else:
                     if len(name_tag) > 1 and product.find(name_tag[0], attrs={name_tag[1]:name_tag[2]}) is None:
                         return matox
+                    #print( product.find(name_tag[0], attrs={name_tag[1]:name_tag[2]}).contents[0].find('a').contents[0] )
                     name = self.trim_the_ends( product.find(name_tag[0], attrs={name_tag[1]:name_tag[2]}).contents[0] )
 
                 for TypeInName in TypesInName:
@@ -593,8 +802,10 @@ class sites():
                     prix = self.trim_the_ends( prix.contents[len(prix)-1].contents[0]).encode('ascii','ignore').decode()
                 elif self.name_site == "bike24.fr":
                     prix = self.trim_the_ends( prix.contents[len(prix)-2]).encode('ascii','ignore').decode()
-                elif self.name_site == "barracuda.be":
+                elif self.name_site == "barracuda.be": #or self.name_site == "velophil.be":
                     prix = self.trim_the_ends( prix.contents[0]).encode('ascii','ignore').decode()
+                elif self.name_site == "velodege.eu":
+                    prix = self.trim_the_ends( prix.contents[0].contents[1]).encode('ascii','ignore').decode()
                 else:
                     prix = self.trim_the_ends( prix.contents[len(prix)-1] ).encode('ascii','ignore').decode()
                 #logger.debug(prix)
@@ -655,7 +866,6 @@ class sites():
                         for var_span in variations_temp[0].find_all('span'):
                             variationlist.append( self.trim_the_ends( var_span.contents[0] ) )
                     variations = variationlist
-                supermodelId = ""
                 '''
                 if self.siteyml[self.name_site]["id"]:
                     idtag = self.siteyml[self.name_site]["id"].split(',')
@@ -766,10 +976,15 @@ class sites():
                 elif marque:
                     if marque + " " + name in matox:
                         id = str(random.randrange(0, 50000, 5))
-                        matox[marque + " " + name + " " + id] = {"marque":marque.lower(), "name":name.lower(), "prix":prix, "variations":variations, "name_search":name_search, "name_site":self.name_site, "fullname":marque.lower() + " " + name.lower()}
-                        #print(matox[marque + " " + name + " " + id])
+                        if url and url != "":
+                            matox[marque + " " + name + " " + id] = {"marque":marque.lower(), "name":name.lower(), "prix":prix, "variations":variations, "name_search":name_search, "name_site":self.name_site, "fullname":marque.lower() + " " + name.lower(), "url":url}
+                        else:
+                            matox[marque + " " + name + " " + id] = {"marque":marque.lower(), "name":name.lower(), "prix":prix, "variations":variations, "name_search":name_search, "name_site":self.name_site, "fullname":marque.lower() + " " + name.lower()}
                     else:
-                        matox[marque + " " + name] = {"marque":marque.lower(), "name":name.lower(), "prix":prix, "variations":variations, "name_search":name_search, "name_site":self.name_site, "fullname":marque.lower() + " " + name.lower()}
+                        if url and url != "":
+                            matox[marque + " " + name] = {"marque":marque.lower(), "name":name.lower(), "prix":prix, "variations":variations, "name_search":name_search, "name_site":self.name_site, "fullname":marque.lower() + " " + name.lower(), "url":url}
+                        else:
+                            matox[marque + " " + name] = {"marque":marque.lower(), "name":name.lower(), "prix":prix, "variations":variations, "name_search":name_search, "name_site":self.name_site, "fullname":marque.lower() + " " + name.lower()}
                         #print(matox[marque + " " + name])
                 ## Récupération de l'ID produit qui change pour le cas de même nom de pduit : exemple : Ortler Bozen Trapèze, rouge : Année 2021 et 2022
                 #  1319869 dans le code : 
@@ -794,5 +1009,5 @@ class sites():
                 break
 
             i = i + 1
-
+        #logger.debug( len(matox) )
         return matox
