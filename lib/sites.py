@@ -112,21 +112,26 @@ class sites():
         matox = dict()
 
         if len(self.products) != 0:
-            datas = json.loads(self.products[0].contents[0].replace("__DKT = ",""))["_ctx"]["data"]
-            #print(json.dumps(json.loads(self.products[0].contents[0])))
+            #print(self.products[0].contents[0].replace("__DKT = ",""))
+            #print(self.products[0].contents[0])
+            pattern = r'\s*__DKT\s*=\s*({.*})\n\s*__CONF.*'
+
+            # Use re.findall to find all matches in the text
+            match = re.search(pattern, self.products[0].contents[0], re.DOTALL)
+
+            # Print the matches
+            if match:
+                DKT = match.group(1)
+            else:
+                logger.info("No DKT in webpage")
+                exit()
+
+            datas = json.loads(DKT)["_ctx"]["data"]
             #print(json.dumps(datas))
-            #print(json.dumps(datas[5]["data"]["blocks"]["items"]))
-            #exit()
             items = list()
             for data in datas:
-                if 'id' in data and 'SupermodelListing' in data['id']:
+                if 'type' in data and 'SupermodelListing' in data['type']:
                     items = data["data"]["blocks"]["items"]
-            ''' Previous method
-            #if "data" in datas[5] and "blocks" in datas[5]["data"]:
-            #    items = datas[5]["data"]["blocks"]["items"]
-            #else:
-            #    items=[]
-            '''
 
             while len(items) != 0 and len(self.products[0].contents) != 0:
 
@@ -161,7 +166,20 @@ class sites():
                 #print(len(self.products))
                 if len(self.products) != 0:
                     #datas = json.loads(self.products[0].contents[0])["_ctx"]["data"]
-                    datas = json.loads(self.products[0].contents[0].replace("__DKT = ",""))["_ctx"]["data"]
+                    #datas = json.loads(self.products[0].contents[0].replace("__DKT = ",""))["_ctx"]["data"]
+                    pattern = r'\s*__DKT\s*=\s*({.*})\n\s*__CONF.*'
+
+                    # Use re.findall to find all matches in the text
+                    match = re.search(pattern, self.products[0].contents[0], re.DOTALL)
+
+                    # Print the matches
+                    if match:
+                        DKT = match.group(1)
+                    else:
+                        logger.info("No DKT in webpage")
+                        exit()
+
+                    datas = json.loads(DKT)["_ctx"]["data"]
                     for data in datas:
                         if 'id' in data and 'SupermodelListing' in data['id']:
                             items = data["data"]["blocks"]["items"]
