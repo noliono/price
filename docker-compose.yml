@@ -1,7 +1,7 @@
 version: '3.1'
 services:
         prix:
-                #build: ./
+                build: ./
                 image: prix:latest #2
                 #image: python:3
                 container_name: prix
@@ -11,5 +11,6 @@ services:
                         - ./:/code
                         - /etc/localtime:/etc/localtime:ro
                 #command: bash -c 'pip3 install elasticsearch pyyaml requests bs4 Mastodon.py discord_webhook pytz && cd /code/ && python3 app.py --send=discord && python3 survey-healthcheck.py' #--send=masto'
-                command: bash -c 'cd /code/ && python3 app.py --configfile=velo --send=discord && python3 survey-healthcheck.py --configfile=velo && python3 app.py --configfile=velo-decath-access --send=discord && python3 survey-healthcheck.py --configfile=velo-decath-access && python3 app.py --configfile=divers-decath --send=discord && python3 survey-healthcheck.py --configfile=divers-decath && python3 app.py --configfile=be --send=discord && python3 survey-healthcheck.py --configfile=be' #--send=masto'
+                #command: bash -c 'cd /code/ && python3 app.py --configfile=velo --send=discord && python3 survey-healthcheck.py --configfile=velo && python3 app.py --configfile=velo-decath-access --send=discord && python3 survey-healthcheck.py --configfile=velo-decath-access && python3 app.py --configfile=divers-decath --send=discord && python3 survey-healthcheck.py --configfile=divers-decath && python3 app.py --configfile=be --send=discord && python3 survey-healthcheck.py --configfile=be' #--send=masto'
+                command: bash -c 'tail -f /dev/null'
                 #command: bash -c 'pip3 install elasticsearch pyyaml requests bs4 Mastodon.py pytz && cd /code/ && python3 app.py --send=mail'
